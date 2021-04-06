@@ -54,9 +54,9 @@ with open('/home/lj/git/KTRolster/RefData/formatJson.json', "r") as loadfile:
 def laneEdit(apikey, summoner, begintime, endtime):
     # summoner id 정보 수집
     Summoner = lol.summonerId(apikey, summoner)
-    accountid = Summoner.loc[0, "accountId"]
+    accountId = Summoner.loc[0, "accountId"]
     # summoner match 정보 수집
-    Matchlist, MatchReference = lol.matchId(apikey, accountid, 13, begintime=begintime, endtime=endtime)
+    Matchlist, MatchReference = lol.matchId(apikey, accountId, 13, begintime=begintime, endtime=endtime)
     Matchlist["summonerName"] = Summoner.loc[0, "name"]
     Matchlist["accountId"] = Summoner.loc[0, "accountId"]
     MatchReference = MatchReference.drop_duplicates(subset="gameId", keep="first")
