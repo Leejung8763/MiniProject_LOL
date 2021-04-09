@@ -1,4 +1,4 @@
-import pocLoLapi as lol
+import lolApi as lol
 import pandas as pd
 import numpy as np
 import requests, json
