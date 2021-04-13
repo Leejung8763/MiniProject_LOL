@@ -215,53 +215,55 @@ APIS: SUMMONER-V4
 GET: /lol/summoner/v4/summoners/by-name/{summonerName}
 DESCRIPTION: Get a summoner by summoner name.
 """
-def summonerId(apiKey:str, userName:str):
+def summonerId(apiKey:str, encryptedAccountId:str=None, summonerName:str=None, encryptedPUUID:str=None, encryptedSummonerId:str=None):
+    # Infinite Loop 0 
     while True:
-        SummonerUrl = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/{userName}?api_key={apiKey}"
-        SummonerRequest = requests.get(SummonerUrl)
+        if encryptedAccountId is not None:
+            SummonerUrl = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-account/{encryptedAccountId}?api_key={apiKey}"
+            SummonerRequest = requests.get(SummonerUrl)
+        elif summonerName is not None:
+            SummonerUrl = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summonerName}?api_key={apiKey}"
+            SummonerRequest = requests.get(SummonerUrl)
+        elif encryptedPUUID is not None:
+            SummonerUrl = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{encryptedPUUID}?api_key={apiKey}"
+            SummonerRequest = requests.get(SummonerUrl)
+        elif encryptedSummonerId is not None:
+            SummonerUrl = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/{encryptedSummonerId}?api_key={apiKey}"
+            SummonerRequest = requests.get(SummonerUrl)
         # Request 상태 코드 확인
         if SummonerRequest.status_code == 200:
             # SummonerDto
             SummonerJson = SummonerRequest.json()
             SummonerDto = pd.DataFrame(data=[list(SummonerJson.values())], columns=list(SummonerJson.keys()))
+            # Escape Infinite Loop 0 
             break
         # Rate Limit Exceeded
         elif SummonerRequest.status_code == 429:
-            startTime = time.time()
-            while True:
-                if SummonerRequest.status_code == 429:  # Infinite Loop
-                    backoff = SummonerRequest.headers.get("Retry-After")
-                    if backoff is None:
-                        backoff:int = 30
-                    else:
-                        backoff = int(backoff)
-                    print(f"Status: 429 / summonerId Rate Limit Exceeded / {datetime.datetime.now()}")
-                    time.sleep(backoff)
-                    SummonerRequest = requests.get(SummonerUrl)
-                elif SummonerRequest.status_code == 200:  # Loop Esacpe
-                    print(f"Status: 429 Recovery / {datetime.datetime.now()}")
-                    break
+            backoff = SummonerRequest.headers.get("Retry-After")
+            if backoff is None:
+                backoff:int = 30
+            else:
+                backoff = int(backoff)
+            print(f"Status: 429 / summonerId Rate Limit Exceeded / Try after {backoff} / {datetime.datetime.now()}")
+            time.sleep(backoff)
         # Data not found
         elif SummonerRequest.status_code == 404:
             print(f"Status: 404 / summonerId Data not found / {datetime.datetime.now()}")
             SummonerDto = pd.DataFrame()
+            # Escape Infinite Loop 0 
             break
         # Service unavailable
         elif SummonerRequest.status_code == 503:
-            startTime = time.time()
-            while True:
-                if SummonerRequest.status_code == 503:  # Infinite Loop
-                    backoff = SummonerRequest.headers.get("Retry-After")
-                    if backoff is None:
-                        backoff: int = 30
-                    else:
-                        backoff = int(backoff)
-                    print(f"Status: 503 / summonerId Service unavailable / {datetime.datetime.now()}")
-                    time.sleep(backoff)
-                    SummonerRequest = requests.get(SummonerUrl)
-                elif SummonerRequest.status_code == 200:  # Loop Esacpe
-                    print(f"Status: 503 Recovery / {datetime.datetime.now()}")
-                    break
+            backoff = SummonerRequest.headers.get("Retry-After")
+            if backoff is None:
+                backoff: int = 30
+            else:
+                backoff = int(backoff)
+            print(f"Status: 503 / summonerId Service unavailable / {datetime.datetime.now()}")
+            time.sleep(backoff)
+            # Escape Infinite Loop 0 
+            break
+            
     return SummonerDto
 
 """
@@ -282,8 +284,6 @@ def matchId(apiKey:str, accoundId:str, season:int, begintime:str="2021-02-03 00:
     The maximum range allowed is 100, otherwise a 400 error code is returned.
     local time
     """
-#     now = datetime.datetime.now().timestamp()
-#     timestamp = math.floor(now*1000 - 60 * 60 * 24 * 30)
     if len(begintime) != 0:
         begintime = math.floor(time.mktime(datetime.datetime.strptime(begintime, "%Y-%m-%d %H:%M:%S").timetuple())*1000)
     if len(endtime) != 0:
@@ -296,8 +296,11 @@ def matchId(apiKey:str, accoundId:str, season:int, begintime:str="2021-02-03 00:
             begintimeList = [begintime + x * 7 * 60 * 60 * 24 * 1000 for x in range(weeks)]
             endtimeList = list(map(lambda x: x + 7 * 60 * 60 * 24 * 1000, begintimeList))
             endtimeList[-1] = endtime
+    # 일주일 단위로 검색
     for begintime, endtime in zip(begintimeList, endtimeList):
+        # Infinite Loop 0
         for step in range(10000):
+            # Infinite Loop 1
             while True:
                 beginindex = 100 * step
                 endindex = 100 * (step + 1)
@@ -314,48 +317,38 @@ def matchId(apiKey:str, accoundId:str, season:int, begintime:str="2021-02-03 00:
                     MatchReferenceDtoTemp = pd.DataFrame(MatchReferenceJson)
                     MatchReferenceDto = pd.concat([MatchReferenceDto, MatchReferenceDtoTemp], ignore_index=True)
                     MatchReferenceDto = MatchReferenceDto.sort_values("timestamp").reset_index(drop=True)
+                    # Escape Infinite Loop 1
                     break
                 # Rate Limit Exceeded
                 elif MatchlistRequest.status_code == 429:
-                    startTime = time.time()
-                    while True:
-                        if MatchlistRequest.status_code == 429:  # Infinite Loop
-                            backoff = MatchlistRequest.headers.get("Retry-After")
-                            if backoff is None:
-                                backoff:int = 30
-                            else:
-                                backoff = int(backoff)
-                            print(f"Status: 429 / matchId Rate Limit Exceeded / Try after {backoff} / {datetime.datetime.now()}")
-                            time.sleep(backoff)
-                            MatchlistRequest = requests.get(MatchlistUrl)
-                        elif MatchlistRequest.status_code == 200:  # Loop Esacpe
-                            print(f"Status: 429 Recovery/ {datetime.datetime.now()}")
-                            break
+                    backoff = MatchlistRequest.headers.get("Retry-After")
+                    if backoff is None:
+                        backoff:int = 30
+                    else:
+                        backoff = int(backoff)
+                    print(f"Status: 429 / matchId Rate Limit Exceeded / Try after {backoff} / {datetime.datetime.now()}")
+                    time.sleep(backoff)
                 # Data not found
                 elif MatchlistRequest.status_code == 404:
                     print(f"Status: 404 / matchId Data not found / {datetime.datetime.now()}")
                     MatchlistDtoTemp = pd.DataFrame()
                     MatchReferenceDtoTemp = pd.DataFrame()
+                    # Infinite Loop 1
                     break
                 # Service unavailable
                 elif MatchlistRequest.status_code == 503:
-                    startTime = time.time()
-                    while True:
-                        if MatchlistRequest.status_code == 503:  # Infinite Loop
-                            backoff = MatchlistRequest.headers.get("Retry-After")
-                            if backoff is None:
-                                backoff: int = 30
-                            else:
-                                backoff = int(backoff)
-                            print(f"Status: 503 / matchId Service unavailable / {datetime.datetime.now()}")
-                            time.sleep(backoff)
-                            MatchlistRequest = requests.get(MatchlistUrl)
-                        elif MatchlistRequest.status_code == 200:  # Loop Esacpe
-                            print(f"Status: 503 Recovery / {datetime.datetime.now()}")
-                            break
+                    backoff = MatchlistRequest.headers.get("Retry-After")
+                    if backoff is None:
+                        backoff: int = 30
+                    else:
+                        backoff = int(backoff)
+                    print(f"Status: 503 / matchId Service unavailable / {datetime.datetime.now()}")
+                    time.sleep(backoff)
                 # 더 이상 추가할 페이지가 없는 경우 종료
             if len(MatchlistDtoTemp) == 0:
+                # Infinite Loop 0
                 break
+                
     return MatchlistDto, MatchReferenceDto
 
 """
@@ -364,6 +357,7 @@ GET: /lol/match/v4/matches/{matchId}
 DESCRIPTION: Get match by match ID.
 """
 def matchResult(apiKey:str, matchId:str):
+    # Infinite Loop 0
     while True:
         MatchUrl = f"https://kr.api.riotgames.com/lol/match/v4/matches/{matchId}?api_key={apiKey}"
         MatchRequest = requests.get(MatchUrl)
@@ -385,9 +379,13 @@ def matchResult(apiKey:str, matchId:str):
             TeamStatsJson = MatchJson.get("teams")
             TeamStatsDto = pd.DataFrame(TeamStatsJson)
             # TeamBansDto
-            TeamBansDto = pd.concat([pd.DataFrame(TeamStatsDto["bans"][0]).T, pd.DataFrame(TeamStatsDto["bans"][1]).T], axis=0)
-            TeamBansDto.columns = [f"bans_{i}" for i in range(1, 6)]
-            TeamBansDto = TeamBansDto.drop(["pickTurn"], axis=0)
+            if MatchDto.loc[0, 'queueId'] in [420, 440]:
+                # TeamBansDto
+                TeamBansDto = pd.concat([pd.DataFrame(TeamStatsDto["bans"][0]).T, pd.DataFrame(TeamStatsDto["bans"][1]).T], axis=0)
+                TeamBansDto.columns = [f"bans_{i}" for i in range(1, 6)]
+                TeamBansDto = TeamBansDto.drop(["pickTurn"], axis=0)
+            else:
+                TeamBansDto = pd.DataFrame()
             # TeamStatsDto + TeamBansDto
             TeamStatsDto = pd.concat([TeamStatsDto, TeamBansDto.reset_index(drop=True)], axis=1)
             TeamStatsDto = TeamStatsDto.drop(["bans"], axis=1)
@@ -398,6 +396,7 @@ def matchResult(apiKey:str, matchId:str):
             ParticipantDto = pd.DataFrame(ParticipantJson)
             # ParticipantStatsDto
             ParticipantStatsDto = pd.DataFrame(dict(ParticipantDto["stats"])).T
+            ParticipantStatsDto = ParticipantStatsDto.fillna(-9999)
             ParticipantStatsDto = ParticipantStatsDto.astype("int")
             # ParticipantTimelineDto
             ParticipantTimelineDto = pd.DataFrame(dict(ParticipantDto["timeline"])).T
@@ -415,45 +414,34 @@ def matchResult(apiKey:str, matchId:str):
             ParticipantDto = pd.merge(ParticipantDto, ParticipantTimelineDto, on="participantId")
             ParticipantDto = ParticipantDto.drop(["stats","timeline","creepsPerMinDeltas","csDiffPerMinDeltas","damageTakenPerMinDeltas","damageTakenDiffPerMinDeltas","xpPerMinDeltas","xpDiffPerMinDeltas","goldPerMinDeltas","combatPlayerScore","objectivePlayerScore","stringivePlayerScore","totalPlayerScore","totalScoreRank","playerScore0","playerScore1","playerScore2","playerScore3","playerScore4","playerScore5","playerScore6","playerScore7","playerScore8","playerScore9"], axis=1, errors="ignore")
             ParticipantDto.insert(0, "gameId", matchId)
+            # Infinite Loop 0
             break
         # Rate Limit Exceeded
         elif MatchRequest.status_code == 429:
-            startTime = time.time()
-            while True:
-                if MatchRequest.status_code == 429:  # Infinite Loop
-                    backoff = MatchRequest.headers.get("Retry-After")
-                    if backoff is None:
-                        backoff:int = 30
-                    else:
-                        backoff = int(backoff)
-                    print(f"Status: 429 / matchResult Rate Limit Exceeded / Try after {backoff} / {datetime.datetime.now()}")
-                    time.sleep(backoff)
-                    MatchRequest = requests.get(MatchUrl)
-                elif MatchRequest.status_code == 200:  # Loop Esacpe
-                    print(f"Status: 429 Recovery/ {datetime.datetime.now()}")
-                    break
+            backoff = MatchRequest.headers.get("Retry-After")
+            if backoff is None:
+                backoff:int = 30
+            else:
+                backoff = int(backoff)
+            print(f"Status: 429 / matchResult Rate Limit Exceeded / Try after {backoff} / {datetime.datetime.now()}")
+            time.sleep(backoff)
         # Data not found
         elif MatchRequest.status_code == 404:
             print(f"Status: 404 / matchResult Data not found / {datetime.datetime.now()}")
             MatchTemp = pd.DataFrame()
             MatchReferenceDtoTemp = pd.DataFrame()
+            # Infinite Loop 0
             break
         # Service unavailable
         elif MatchRequest.status_code == 503:
-            startTime = time.time()
-            while True:
-                if MatchRequest.status_code == 503:  # Infinite Loop
-                    backoff = MatchRequest.headers.get("Retry-After")
-                    if backoff is None:
-                        backoff: int = 30
-                    else:
-                        backoff = int(backoff)
-                    print(f"Status: 503 / matchResult Service unavailable / {datetime.datetime.now()}")
-                    time.sleep(backoff)
-                    MatchRequest = requests.get(MatchUrl)
-                elif MatchRequest.status_code == 200:  # Loop Esacpe
-                    print(f"Status: 503 Recovery / {datetime.datetime.now()}")
-                    break
+            backoff = MatchRequest.headers.get("Retry-After")
+            if backoff is None:
+                backoff: int = 30
+            else:
+                backoff = int(backoff)
+            print(f"Status: 503 / matchResult Service unavailable / {datetime.datetime.now()}")
+            time.sleep(backoff)
+            
     return MatchDto, ParticipantIdentityDto, TeamStatsDto, ParticipantDto
    
 """
@@ -462,6 +450,7 @@ GET: /lol/match/v4/timelines/by-match/{matchId}
 DESCRIPTION: Get match timeline by match ID.
 """
 def matchTimeline(apiKey:str, matchId:str):
+    # Infinite Loop 0
     while True:
         MatchTimelineUrl = f"https://kr.api.riotgames.com/lol/match/v4/timelines/by-match/{matchId}?api_key={apiKey}"
         MatchTimelineRequest = requests.get(MatchTimelineUrl)
@@ -498,45 +487,34 @@ def matchTimeline(apiKey:str, matchId:str):
                 MatchEventDtoTemp = pd.DataFrame(MatchEventDtoTemp)
                 MatchEventDtoTemp.insert(0, "gameId", matchId)
                 MatchEventDto = pd.concat([MatchEventDto, MatchEventDtoTemp], ignore_index=True)
+            # Escape Infinite Loop 0
             break
         # Rate Limit Exceeded
         elif MatchTimelineRequest.status_code == 429:
-            startTime = time.time()
-            while True:
-                if MatchTimelineRequest.status_code == 429:  # Infinite Loop
-                    backoff = MatchTimelineRequest.headers.get("Retry-After")
-                    if backoff is None:
-                        backoff: int = 30
-                    else:
-                        backoff = int(backoff)
-                    print(f"Status: 429 / matchTimeline Rate Limit Exceeded / Try after {backoff} / {datetime.datetime.now()}")
-                    time.sleep(backoff)
-                    MatchTimelineRequest = requests.get(MatchTimelineUrl)
-                elif MatchTimelineRequest.status_code == 200:  # Loop Esacpe
-                    print(f"Status: 429 Recovery / {datetime.datetime.now()}")
-                    break
+            backoff = MatchTimelineRequest.headers.get("Retry-After")
+            if backoff is None:
+                backoff: int = 30
+            else:
+                backoff = int(backoff)
+            print(f"Status: 429 / matchTimeline Rate Limit Exceeded / Try after {backoff} / {datetime.datetime.now()}")
+            time.sleep(backoff)
         # Data not found
         elif MatchTimelineRequest.status_code == 404:
             print(f"Status: 404 / matchTimeline Data not found / {datetime.datetime.now()}")
             MatchParticipantFrameDto = pd.DataFrame()
             MatchEventDto = pd.DataFrame()
+            # Escape Infinite Loop 0
             break
         # Service unavailable
         elif MatchTimelineRequest.status_code == 503:
-            startTime = time.time()
-            while True:
-                if MatchTimelineRequest.status_code == 503:  # Infinite Loop
-                    backoff = MatchTimelineRequest.headers.get("Retry-After")
-                    if backoff is None:
-                        backoff: int = 30
-                    else:
-                        backoff = int(backoff)
-                    print(f"Status: 503 / matchTimeline Service unavailable / {datetime.datetime.now()}")
-                    time.sleep(backoff)
-                    MatchTimelineRequest = requests.get(MatchTimelineUrl)
-                elif MatchTimelineRequest.status_code == 200:  # Loop Esacpe
-                    print(f"Status: 503 Recovery / {datetime.datetime.now()}")
-                    break
+            backoff = MatchTimelineRequest.headers.get("Retry-After")
+            if backoff is None:
+                backoff: int = 30
+            else:
+                backoff = int(backoff)
+            print(f"Status: 503 / matchTimeline Service unavailable / {datetime.datetime.now()}")
+            time.sleep(backoff)
+            
     return MatchTimelineDto, MatchFrameDto, MatchParticipantFrameDto, MatchEventDto
 
 """
