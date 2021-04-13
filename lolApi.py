@@ -454,3 +454,62 @@ def matchTimeline(apiKey:str, matchId:str):
                     print(f"Status: 503 Recovery / {datetime.datetime.now()}")
                     break
     return MatchTimelineDto, MatchFrameDto, MatchParticipantFrameDto, MatchEventDto
+
+"""
+APIS: SPECTATOR-V4
+GET: /lol/spectator/v4/active-games/by-summoner/{encryptedSummonerId}
+DESCRIPTION: Get current game information for the given summoner ID.
+"""
+def spectator(apiKey, summonerId):
+    # Infinite Loop 0
+    while True:
+        CurrentGameUrl = f"https://kr.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{summonerId}?api_key={apiKey}"
+        CurrentGameRequest = requests.get(CurrentGameUrl)
+        # Request 상태 코드 확인
+        if CurrentGameRequest.status_code == 200:
+            # CurrentGameInfo
+            CurrentGameJson = CurrentGameRequest.json()
+            observers = CurrentGameJson['observers']
+            CurrentGameJson.pop('observers')
+            CurrentGameInfo = pd.DataFrame(CurrentGameJson)
+            CurrentGameInfo['encryptionKey'] = observers['encryptionKey']
+            # BannedChampion
+            BannedChampion = pd.DataFrame(dict(CurrentGameInfo['bannedChampions'])).T
+            BannedChampion = BannedChampion.rename(columns={"championId":"bannedChampionId"})
+            # CurrentGameParticipant
+            CurrentGameParticipant = pd.DataFrame(dict(CurrentGameInfo['participants'])).T
+            # perks
+            perks = pd.DataFrame(dict(CurrentGameParticipant['perks'])).T
+            perks = pd.concat((perks, pd.DataFrame(data=perks['perkIds'].tolist(), columns=['perk0', 'perk1', 'perk2', 'perk3', 'perk4', 'perk5', 'statPerk0', 'statPerk1', 'statPerk2'])), axis=1)
+            perks = perks.drop('perkIds', axis=1)
+            # CurrentGameInfo + CurrentGameParticipant + perks + BannedChampion
+            CurrentGameInfo = pd.concat((CurrentGameInfo, CurrentGameParticipant, perks, BannedChampion[['bannedChampionId', 'pickTurn']]), axis=1)
+            CurrentGameInfo = CurrentGameInfo.drop(['participants', 'bannedChampions', 'perks'], axis=1)
+            # Escape Infinite Loop 0
+            break
+        # Rate Limit Exceeded
+        elif CurrentGameRequest.status_code == 429:
+            backoff = CurrentGameRequest.headers.get("Retry-After")
+            if backoff is None:
+                backoff: int = 30
+            else:
+                backoff = int(backoff)
+            print("Status: 429 Error / spectator Rate Limit Exceeded")
+            time.sleep(backoff)
+        # Data not found
+        elif CurrentGameRequest.status_code == 404:
+            print(f"Status: 404 / spectator Data not found / {datetime.datetime.now()}")
+            CurrentGameInfo = pd.DataFrame()
+            # Escape Infinite Loop 0
+            break           
+        # Service unavailable
+        elif CurrentGameRequest.status_code == 503:
+            backoff = CurrentGameRequest.headers.get("Retry-After")
+            if backoff is None:
+                backoff: int = 30
+            else:
+                backoff = int(backoff)
+            print(f"Status: 503 / spectator Service unavailable / {datetime.datetime.now()}")
+            time.sleep(backoff)
+
+    return CurrentGameInfo
