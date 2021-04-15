@@ -366,6 +366,7 @@ def matchResult(apiKey:str, matchId:str):
             # MatchDto
             MatchJson = MatchRequest.json()
             MatchDto = pd.DataFrame(data=[list(MatchJson.values())], columns=list(MatchJson.keys()))
+            MatchDto = MatchDto.drop(["participantIdentities", "teams", "participants"], axis=1)
             # ParticipantIdentityDto
             ParticipantIdentityJson = MatchJson.get("participantIdentities")
             ParticipantIdentityDto = pd.DataFrame(ParticipantIdentityJson)
@@ -470,16 +471,15 @@ def matchTimeline(apiKey:str, matchId:str):
                 MatchParticipantFrameJson = MatchFrameDto.loc[rownum,:].get("participantFrames")
                 MatchParticipantFrameDtoTemp = pd.DataFrame(MatchParticipantFrameJson).T
                 MatchParticipantFrameDtoTemp.insert(0, "gameId", matchId)
-                MatchParticipantFrameDtoTemp.insert(1, "timestamp", MatchFrameDto.loc[rownum,:].get("timestamp"))
-                # MatchPositionDto
-                MatchPositionJson = MatchParticipantFrameDtoTemp.get("position")
-                if MatchPositionJson is not None:
-                    MatchPositionDtoTemp = pd.DataFrame(dict(MatchPositionJson)).T
-                    MatchParticipantFrameDtoTemp.insert(3, "position_x", MatchPositionDtoTemp["x"])
-                    MatchParticipantFrameDtoTemp.insert(3, "position_y", MatchPositionDtoTemp["y"])
-                    MatchParticipantFrameDtoTemp = MatchParticipantFrameDtoTemp.drop(["position","dominionScore","teamScore"], axis=1, errors="ignore")
-                # MatchParticipantFrameDto + MatchPositionDto
+                MatchParticipantFrameDtoTemp.insert(1, "timestamp", MatchFrameDto.loc[rownum,:].get("timestamp"))               
                 MatchParticipantFrameDto = pd.concat([MatchParticipantFrameDto, MatchParticipantFrameDtoTemp], ignore_index=True)
+            # MatchPositionDto
+            MatchPositionJson = MatchParticipantFrameDto.get("position")
+            MatchPositionDtoTemp = pd.DataFrame(dict(MatchPositionJson)).T
+            # MatchParticipantFrameDto + MatchPositionDto
+            MatchParticipantFrameDto.insert(3, "position_x", MatchPositionDtoTemp["x"])
+            MatchParticipantFrameDto.insert(4, "position_y", MatchPositionDtoTemp["y"])
+            MatchParticipantFrameDto = MatchParticipantFrameDto.drop(["position","dominionScore","teamScore"], axis=1, errors="ignore")
             # MatchEventDto
             MatchEventDto = pd.DataFrame()
             for rownum in range(len(MatchTimelineDto.get("frames"))):
@@ -487,6 +487,20 @@ def matchTimeline(apiKey:str, matchId:str):
                 MatchEventDtoTemp = pd.DataFrame(MatchEventDtoTemp)
                 MatchEventDtoTemp.insert(0, "gameId", matchId)
                 MatchEventDto = pd.concat([MatchEventDto, MatchEventDtoTemp], ignore_index=True)
+            # MatchPositionDto
+            MatchPositionJson = MatchEventDto.get("position")
+            if MatchPositionJson is not None:
+                MatchPositionDtoTemp = pd.DataFrame(dict(MatchPositionJson)).T
+                # MatchParticipantFrameDto + MatchPositionDto
+                MatchEventDto.insert(3, "position_x", MatchPositionDtoTemp["x"])
+                MatchEventDto.insert(4, "position_y", MatchPositionDtoTemp["y"])
+                MatchEventDto = MatchEventDto.astype({"assistingParticipantIds": str})
+                assistingParticipantIdsTmp = MatchEventDto.assistingParticipantIds.str.replace("[","", regex=True).replace("]","", regex=True)
+                assistingParticipantIdsTmp = assistingParticipantIdsTmp.str.split(",", expand=True)
+                assistingParticipantIdsTmp.columns = [f"assistingParticipantIds{x}" for x in range(assistingParticipantIdsTmp.shape[1])]
+                for idx in assistingParticipantIdsTmp.columns.tolist()[::-1]:
+                    MatchEventDto.insert(14, idx, assistingParticipantIdsTmp[idx])
+                MatchEventDto = MatchEventDto.drop(["position", "assistingParticipantIds"], axis=1, errors="ignore")
             # Escape Infinite Loop 0
             break
         # Rate Limit Exceeded
