@@ -61,7 +61,6 @@ CurrentGameInfo = pd.DataFrame()
 for summonerId in summonerList.summonerId:
     summonerIdListTmp = lolApi.summonerId(apikey, encryptedSummonerId=summonerId)
     accountId = summonerIdListTmp.loc[0, "accountId"]
-    print(summonerIdListTmp.loc[summonerIdListTmp.accountId==accountId, 'name'][0])
     # summoner match 정보 수집
     MatchlistTmp, MatchReferenceTmp = lolApi.matchId(apikey, accountId, 13, f"{args.begin} 00:00:00", f"{args.end} 00:00:00")
     if len(MatchlistTmp) > 0:
@@ -101,5 +100,4 @@ MatchFrame.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','
 MatchParticipantFrame.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchParticipantFrame{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
 MatchEvent.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchEvent{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
 
-
-print(time.time() - startTime)
+print(f"Start: {datetime.datetime.fromtimestamp(startTime)}, End: {datetime.datetime.fromtimestamp(time.time())}, Total: {time.time()-startTime}")
