@@ -59,47 +59,51 @@ MatchTimeline, MatchFrame, MatchParticipantFrame, MatchEvent = pd.DataFrame(), p
 CurrentGameInfo = pd.DataFrame()
 
 for summonerIndex in range(len(summonerList)):
-    summonerId = summonerList.summonerId[summonerIndex]
-    summonerIdListTmp = lolApi.summonerId(apikey, encryptedSummonerId=summonerId)
-    accountId = summonerIdListTmp.loc[0, "accountId"]
-    # summoner match 정보 수집
-    MatchlistTmp, MatchReferenceTmp = lolApi.matchId(apikey, accountId, 13, f"{args.begin} 00:00:00", f"{args.end} 00:00:00")
-    if len(MatchlistTmp) > 0:
-        for gameIdx in range(len(MatchlistTmp)):
-            MatchTmp, ParticipantIdentityTmp, TeamStatsTmp, ParticipantTmp = lolApi.matchResult(apikey, MatchReferenceTmp.loc[gameIdx, "gameId"])
-            MatchTimelineTmp, MatchFrameTmp, MatchParticipantFrameTmp, MatchEventTmp = lolApi.matchTimeline(apikey, MatchReferenceTmp.loc[gameIdx, "gameId"])
+    try:
+        summonerId = summonerList.summonerId[summonerIndex]
+        summonerIdListTmp = lolApi.summonerId(apikey, encryptedSummonerId=summonerId)
+        accountId = summonerIdListTmp.loc[0, "accountId"]
+        print(summonerIdListTmp.loc[0, 'name'])
+        # summoner match 정보 수집
+        MatchlistTmp, MatchReferenceTmp = lolApi.matchId(apikey, accountId, 13, f"{args.begin} 00:00:00", f"{args.end} 00:00:00")
+        if len(MatchlistTmp) > 0:
+            for gameIdx in range(len(MatchlistTmp)):
+                MatchTmp, ParticipantIdentityTmp, TeamStatsTmp, ParticipantTmp = lolApi.matchResult(apikey, MatchReferenceTmp.loc[gameIdx, "gameId"])
+                MatchTimelineTmp, MatchFrameTmp, MatchParticipantFrameTmp, MatchEventTmp = lolApi.matchTimeline(apikey, MatchReferenceTmp.loc[gameIdx, "gameId"])
 
-            Match = pd.concat((Match, MatchTmp), axis=0, ignore_index=True)
-            ParticipantIdentity = pd.concat((ParticipantIdentity, ParticipantIdentityTmp), axis=0, ignore_index=True)
-            TeamStats = pd.concat((TeamStats, TeamStatsTmp), axis=0, ignore_index=True)
-            Participant = pd.concat((Participant, ParticipantTmp), axis=0, ignore_index=True)
-            MatchTimeline = pd.concat((MatchTimeline, MatchTimelineTmp), axis=0, ignore_index=True)
-            MatchFrame = pd.concat((MatchFrame, MatchFrameTmp), axis=0, ignore_index=True)
-            MatchParticipantFrame = pd.concat((MatchParticipantFrame, MatchParticipantFrameTmp), axis=0, ignore_index=True)
-            MatchEvent = pd.concat((MatchEvent, MatchEventTmp), axis=0, ignore_index=True)           
-    Matchlist = pd.concat((Matchlist, MatchlistTmp), axis=0, ignore_index=True)
-    MatchReference = pd.concat((MatchReference, MatchReferenceTmp), axis=0, ignore_index=True)
-    
-    if (summonerIndex%100 == 0)|(summonerIndex == len(summonerList)-1):
-        # Drop duplicated data 
-        Match = Match.drop_duplicates()
-        ParticipantIdentity = ParticipantIdentity.drop_duplicates()
-        TeamStats = TeamStats.drop_duplicates()
-        Participant = Participant.drop_duplicates()
-        # MatchTimeline = # MatchTimeline.drop_duplicates()
-        # MatchFrame = # MatchFrame.drop_duplicates()
-        MatchParticipantFrame = MatchParticipantFrame.drop_duplicates()
-        MatchEvent = MatchEvent.drop_duplicates()
-        MatchReference = MatchReference.drop_duplicates()
+                Match = pd.concat((Match, MatchTmp), axis=0, ignore_index=True)
+                ParticipantIdentity = pd.concat((ParticipantIdentity, ParticipantIdentityTmp), axis=0, ignore_index=True)
+                TeamStats = pd.concat((TeamStats, TeamStatsTmp), axis=0, ignore_index=True)
+                Participant = pd.concat((Participant, ParticipantTmp), axis=0, ignore_index=True)
+                MatchTimeline = pd.concat((MatchTimeline, MatchTimelineTmp), axis=0, ignore_index=True)
+                MatchFrame = pd.concat((MatchFrame, MatchFrameTmp), axis=0, ignore_index=True)
+                MatchParticipantFrame = pd.concat((MatchParticipantFrame, MatchParticipantFrameTmp), axis=0, ignore_index=True)
+                MatchEvent = pd.concat((MatchEvent, MatchEventTmp), axis=0, ignore_index=True)           
+        Matchlist = pd.concat((Matchlist, MatchlistTmp), axis=0, ignore_index=True)
+        MatchReference = pd.concat((MatchReference, MatchReferenceTmp), axis=0, ignore_index=True)
 
-        # save to csv
-        Match.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/Match{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
-        ParticipantIdentity.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/ParticipantIdentity{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
-        TeamStats.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/TeamStats{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
-        Participant.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/Participant{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
-        MatchTimeline.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchTimeline{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
-        MatchFrame.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchFrame{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
-        MatchParticipantFrame.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchParticipantFrame{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
-        MatchEvent.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchEvent{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+        if (summonerIndex%100 == 0)|(summonerIndex == len(summonerList)-1):
+            # Drop duplicated data 
+            Match = Match.drop_duplicates()
+            ParticipantIdentity = ParticipantIdentity.drop_duplicates()
+            TeamStats = TeamStats.drop_duplicates()
+            Participant = Participant.drop_duplicates()
+            # MatchTimeline = # MatchTimeline.drop_duplicates()
+            # MatchFrame = # MatchFrame.drop_duplicates()
+            MatchParticipantFrame = MatchParticipantFrame.drop_duplicates()
+            MatchEvent = MatchEvent.drop_duplicates()
+            MatchReference = MatchReference.drop_duplicates()
 
+            # save to csv
+            Match.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/Match{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+            ParticipantIdentity.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/ParticipantIdentity{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+            TeamStats.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/TeamStats{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+            Participant.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/Participant{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+            MatchTimeline.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchTimeline{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+            MatchFrame.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchFrame{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+            MatchParticipantFrame.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchParticipantFrame{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+            MatchEvent.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchEvent{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+    except:
+        time.sleep(2)
+        print(f"Connection refused {datetime.datetime.now()}")
 print(f"Start: {datetime.datetime.fromtimestamp(startTime)}, End: {datetime.datetime.fromtimestamp(time.time())}, Total: {time.time()-startTime}")
