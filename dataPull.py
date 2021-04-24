@@ -60,10 +60,10 @@ CurrentGameInfo = pd.DataFrame()
 
 for summonerIndex in range(len(summonerList)):
     try:
+        print(summonerList.loc[summonerIndex, "summonerName"])
         summonerId = summonerList.summonerId[summonerIndex]
         summonerIdListTmp = lolApi.summonerId(apikey, encryptedSummonerId=summonerId)
         accountId = summonerIdListTmp.loc[0, "accountId"]
-        print(summonerIdListTmp.loc[0, 'name'])
         # summoner match 정보 수집
         MatchlistTmp, MatchReferenceTmp = lolApi.matchId(apikey, accountId, 13, f"{args.begin} 00:00:00", f"{args.end} 00:00:00")
         if len(MatchlistTmp) > 0:
@@ -82,7 +82,7 @@ for summonerIndex in range(len(summonerList)):
         Matchlist = pd.concat((Matchlist, MatchlistTmp), axis=0, ignore_index=True)
         MatchReference = pd.concat((MatchReference, MatchReferenceTmp), axis=0, ignore_index=True)
 
-        if (summonerIndex%100 == 0)|(summonerIndex == len(summonerList)-1):
+        if (summonerIndex%20 == 0)|(summonerIndex == len(summonerList)-1):
             # Drop duplicated data 
             Match = Match.drop_duplicates()
             ParticipantIdentity = ParticipantIdentity.drop_duplicates()
@@ -103,6 +103,7 @@ for summonerIndex in range(len(summonerList)):
             MatchFrame.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchFrame{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
             MatchParticipantFrame.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchParticipantFrame{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
             MatchEvent.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchEvent{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
+            MatchReference.to_csv(f"/data1/lolData/cgLeague/APIData/{args.begin.replace('2021','').replace('-','')}/MatchReference{args.begin.replace('2021','').replace('-','')}.csv", index=False, encoding='utf-8-sig')
     except:
         time.sleep(2)
         print(f"Connection refused {datetime.datetime.now()}")
