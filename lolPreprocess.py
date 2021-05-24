@@ -50,8 +50,8 @@ MatchTimeline = df["MatchTimeline"][df["MatchTimeline"].gameId.isin(Match.gameId
 MatchFrame = df["MatchFrame"][df["MatchFrame"].gameId.isin(Match.gameId.unique())].copy()
 MatchParticipantFrame = df["MatchParticipantFrame"][df["MatchParticipantFrame"].gameId.isin(Match.gameId.unique())].copy()
 MatchEvent = df["MatchEvent"][df["MatchEvent"].gameId.isin(Match.gameId.unique())].copy()
-MatchEvent.participantId = MatchEvent.participantId.str.replace(".0","",regex=False)
-MatchEvent.itemId = MatchEvent.itemId.str.replace(".0","",regex=False)
+MatchEvent.participantId = MatchEvent.participantId.str.replace(".0","",regex=False).astype("category")
+MatchEvent.itemId = MatchEvent.itemId.str.replace(".0","",regex=False).astype("category")
 
 # 다시하기 체크
 Participant = df["Participant"][df["Participant"].gameId.isin(Match.gameId.unique())].copy()
@@ -67,8 +67,7 @@ for data in [Match, MatchReference, TeamStats, Participant, ParticipantIdentity,
     
 # lane 정보 수정하기
 # MatchTemp 결과값 수집
-Participant.insert(3, "laneEdit", None) # lane 정보 수정하기
-
+Participant.insert(3, "laneEdit", "None") # lane 정보 수정하기
 """
 Process 1:
 Jungle Lane
@@ -87,9 +86,12 @@ participantId["laneTmp"] = "jungle"
 participantId.drop_duplicates(keep="last", inplace=True)
 Participant = pd.merge(Participant, participantId, on=["gameId", "participantId"], how="left")
 Participant.loc[((Participant.spell1Id == "11") | (Participant.spell2Id == "11")) & (Participant.laneTmp == "jungle"), "laneEdit"] = "JUNGLE"
+
 # 각 game, 각 team 정글러 숫자 확인
+Participant = Participant.astype({"laneEdit":"category"})
 jungleCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
 jungleCount = jungleCount.reset_index(drop=False)
+
 # 팀별 정글러가 1명이 아닌 경우
 if len(jungleCount[(jungleCount.laneEdit == "JUNGLE")&(jungleCount.jungleIdx != 1)]) > 0:
     # 문제가 있는 game & team
@@ -100,13 +102,16 @@ if len(jungleCount[(jungleCount.laneEdit == "JUNGLE")&(jungleCount.jungleIdx != 
     jungleErrorIdx = jungleErrorCount.reset_index(drop=False)
     jungleErrorIdx = jungleError.loc[pd.Index(jungleErrorIdx[-jungleErrorIdx.jungleIdx.isnull()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
     jungleErrorIdx["laneTmp2"] = "jungle"
-    ParticipantTmp = pd.merge(Participant, jungleErrorIdx[["gameId", "teamId"]], on=["gameId", "teamId"], how="inner")
+    
+    ParticipantTmp = pd.merge(Participant, jungleErrorIdx[["gameId", "teamId"]].astype("string"), on=["gameId", "teamId"], how="inner")
     ParticipantTmp = pd.merge(ParticipantTmp, jungleErrorIdx, on=["gameId", "participantId", "teamId"], how="left")
-    ParticipantTmp.loc[ParticipantTmp.laneTmp2!="jungle", "laneTmp2"] = "nonjungle"
+    ParticipantTmp.loc[(ParticipantTmp.laneTmp=="jungle")&(ParticipantTmp.laneTmp2!="jungle"), "laneTmp2"] = "nonjungle"
+    
     Participant = pd.merge(Participant, ParticipantTmp[["gameId", "participantId", "teamId", "laneTmp2"]], on=["gameId", "participantId", "teamId"], how="left")
     Participant.loc[Participant.laneTmp2=="nonjungle", "laneEdit"] = "None"
     Participant.loc[Participant.laneTmp2=="jungle", "laneEdit"] = "JUNGLE"
     Participant = Participant.drop(["laneTmp", "laneTmp2"], axis=1)
+    Participant = Participant.astype({"laneEdit":"string"})
 
 ## Support
 # 서폿 아이템 ID
@@ -116,8 +121,9 @@ participantId = MatchEvent.loc[(MatchEvent.type == 'ITEM_PURCHASED') & (MatchEve
 participantId["laneTmp"] = "support"
 participantId.drop_duplicates(keep="last", inplace=True)
 Participant = pd.merge(Participant, participantId, on=["gameId", "participantId"], how="left")
-Participant.loc[Participant.laneTmp=="support", "laneEdit"] = "SUPPORT"
+Participant.loc[(Participant.laneEdit!="JUNGLE")&(Participant.laneTmp=="support"), "laneEdit"] = "SUPPORT"
 # 각 game, 각 team 정글러 숫자 확인
+Participant = Participant.astype({"laneEdit":"category"})
 supportCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(supportIdx=("laneEdit","size"))
 supportCount = supportCount.reset_index(drop=False)
 # 팀별 서포터가 1명이 아닌 경우
@@ -131,13 +137,16 @@ if len(supportCount[(supportCount.laneEdit == "SUPPORT")&(supportCount.supportId
     supportErrorIdx = supportErrorCount.reset_index(drop=False)
     supportErrorIdx = supportError.loc[pd.Index(supportErrorIdx[-supportErrorIdx.supportIdx.isnull()].astype({"supportIdx":"int"}).supportIdx.tolist()), ["gameId","participantId", "teamId"]]
     supportErrorIdx["laneTmp2"] = "support"
-    ParticipantTmp = pd.merge(Participant, supportErrorIdx[["gameId", "teamId"]].astype("string"), on=["gameId", "teamId"], how="inner")
+
+    ParticipantTmp = pd.merge(Participant, supportErrorIdx[["gameId", "teamId"]], on=["gameId", "teamId"], how="inner")
     ParticipantTmp = pd.merge(ParticipantTmp, supportErrorIdx, on=["gameId", "participantId", "teamId"], how="left")
     ParticipantTmp.loc[ParticipantTmp.laneTmp2!="support", "laneTmp2"] = "nonsupport"
+
     Participant = pd.merge(Participant, ParticipantTmp[["gameId", "participantId", "teamId", "laneTmp2"]], on=["gameId", "participantId", "teamId"], how="left")
-    Participant.loc[Participant.laneTmp2=="nonsupport", "laneEdit"] = "None"
+    Participant.loc[(Participant.laneTmp=="support")&(Participant.laneTmp2=="nonsupport"), "laneEdit"] = "None"
     Participant.loc[Participant.laneTmp2=="support", "laneEdit"] = "SUPPORT"
     Participant = Participant.drop(["laneTmp", "laneTmp2"], axis=1)
+    Participant = Participant.astype({"laneEdit":"string"})
 
 '''
 Procces 2:
@@ -160,7 +169,7 @@ MatchParticipantFrame.loc[:, ["position_yEdit"]] = scaler.transform(MatchPartici
 positionData = (
     MatchParticipantFrame.loc[:, ["gameId", "participantId", "position_xEdit", "position_yEdit"]]
     .groupby(by=["gameId", "participantId"])
-    .head(10)
+    .head(15)
     .copy()
 )
 # 0 ~ 10분 좌표를 추적하여 Lane 지정
@@ -174,8 +183,8 @@ positionData.loc[
     ,"TOP",
 ]: int = 1
 positionData.loc[
-    (positionData.position_xEdit >= 176)& (positionData.position_xEdit <= 336)
-    & (positionData.position_yEdit >= 176)& (positionData.position_yEdit <= 336),
+    (positionData.position_xEdit >= 170)& (positionData.position_xEdit <= 340)
+    & (positionData.position_yEdit >= 170)& (positionData.position_yEdit <= 340),
     "MIDDLE",
 ]: int = 1
 positionData.loc[
@@ -187,20 +196,20 @@ positionData.loc[
     & (positionData.position_yEdit >= 170)& (positionData.position_yEdit <= 310)),
     "BOTTOM",
 ]: int = 1
+
 positionDataGroup = positionData.groupby(["gameId", "participantId"]).sum().reset_index(drop=False)
 positionDataGroup["laneEdit"] = positionDataGroup[["TOP", "MIDDLE", "BOTTOM"]].idxmax(axis=1)
 positionDataGroup.loc[positionDataGroup[['TOP', 'MIDDLE', 'BOTTOM']].sum(axis=1) == 0, 'laneEdit'] = None
 positionData = pd.merge(positionData, positionDataGroup[["gameId", "participantId", "laneEdit"]], how="left", on=["gameId", "participantId"])
 positionData = pd.merge(positionData, Participant[["gameId", "participantId", "teamId"]], how="left", on=["gameId", "participantId"])
+
 # 탑 미드 원딜만 정보 반영
 ParticipantTmp = Participant.loc[-Participant.laneEdit.isin(["JUNGLE", "SUPPORT"]), ["gameId", "participantId"]]
-# ParticipantTmp["change"] = 1
 ParticipantTmp = pd.merge(ParticipantTmp, positionData[["gameId", "participantId", "laneEdit"]].drop_duplicates(), on=["gameId", "participantId"], how="left")
+
 Participant = pd.merge(Participant, ParticipantTmp, on=["gameId", "participantId"], how="left", suffixes=("", "_y"))
 Participant.loc[-Participant.laneEdit_y.isnull(), "laneEdit"] = Participant.loc[-Participant.laneEdit_y.isnull(), "laneEdit_y"]
-# Participant.loc[Participant["change"]!=1, "change"] = 0
-# Participant = Participant.astype({"change":"boolean"})
-Participant = Participant.drop(["laneEdit_y"], axis=1).astype({"laneEdit":"category"})
+Participant = Participant.drop("laneEdit_y", axis=1)
 
 # save
 createFolder(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}")
