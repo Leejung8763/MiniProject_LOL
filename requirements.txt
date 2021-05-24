@@ -1,0 +1,7 @@
+ipykernel==5.5.5
+matplotlib==3.4.2
+pandas==1.2.4
+pip-chill==1.0.1
+pyarrow==4.0.0
+requests==2.25.1
+sklearn==0.0
