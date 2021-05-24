@@ -1,0 +1,7 @@
+.ipynb_checkpoints/
+APIData/
+RefData/
+SummonerList/
+__pycache__/
+
+*.ipynb
