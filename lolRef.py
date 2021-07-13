@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
-import requests, json
+import requests, json, urllib
 import matplotlib.pyplot as plt
+import PIL
 
 class lolRef:
     def __init__(self):
@@ -28,7 +29,7 @@ class lolRef:
         self.spellInfoDto = self.spellInfoDto.astype({"type":"string", "version":"string", "id":"string", "name":"string", "description":"string", "tooltip":"string", "maxrank":"string", "cooldown":"string", "cooldownBurn":"string", "cost":"string", "costBurn":"string", "datavalues":"string", "effect":"string", "effectBurn":"string", "vars":"string", "key":"string", "summonerLevel":"int8", "modes":"string", "costType":"string", "maxammo":"string", "range":"string", "rangeBurn":"string", "image":"string", "resource":"string"})
         # Summoner"s Rift DataFrame
         mapUrl = f"https://ddragon.leagueoflegends.com/cdn/10.18.1/img/map/map11.png"
-        self.lolMap = plt.imread(mapUrl)
+        self.lolMap = np.asarray(PIL.Image.open(urllib.request.urlopen(mapUrl)))
         # Rune Info DataFrame
         runeRequest = requests.get(f"http://ddragon.leagueoflegends.com/cdn/{self.current_version}/data/ko_KR/runesReforged.json")
         self.runeInfoDto = pd.DataFrame(runeRequest.json())
