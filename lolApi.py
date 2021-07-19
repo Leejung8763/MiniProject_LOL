@@ -271,7 +271,7 @@ APIS: MATCH-V4
 GET: /lol/match/v4/matchlists/by-account/{encryptedAccountId}
 DESCRIPTION: Get matchlist for games played on given account ID and platform ID and filtered using given filter parameters, if any.
 """
-def matchId(apiKey:str, accoundId:str, season:int, begintime:str="2021-02-03 00:00:00",endtime:str="2021-02-20 00:00:00"):
+def matchId(apiKey:str, accountId:str, season:int, begintime:str="2021-02-03 00:00:00",endtime:str="2021-02-20 00:00:00"):
     # MatchlistDto
     MatchlistDto = pd.DataFrame()
     # MatchReferenceDto
@@ -304,7 +304,7 @@ def matchId(apiKey:str, accoundId:str, season:int, begintime:str="2021-02-03 00:
             while True:
                 beginindex = 100 * step
                 endindex = 100 * (step + 1)
-                MatchlistUrl = f"https://kr.api.riotgames.com/lol/match/v4/matchlists/by-account/{accoundId}?season={season}&beginIndex={beginindex}&endIndex={endindex}&api_key={apiKey}&beginTime={begintime}&endTime={endtime}"
+                MatchlistUrl = f"https://kr.api.riotgames.com/lol/match/v4/matchlists/by-account/{accountId}?season={season}&beginIndex={beginindex}&endIndex={endindex}&api_key={apiKey}&beginTime={begintime}&endTime={endtime}"
                 MatchlistRequest = requests.get(MatchlistUrl)
                 # Request 상태 코드 확인
                 if MatchlistRequest.status_code == 200:
