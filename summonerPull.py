@@ -39,8 +39,8 @@ apiList = [x.replace("\n", "") for x in apiList]
 apikey = apiList[0].replace("\n", "")
 
 summonerList = pd.DataFrame()
-summonerList = pd.concat((summonerList, lolApi.challengerLeague(apikey)))
-summonerList = pd.concat((summonerList, lolApi.grandmasterLeague(apikey)))
+summonerList = pd.concat((summonerList, lolApi.challengerLeague(apikey)), ignore_index=True)
+summonerList = pd.concat((summonerList, lolApi.grandmasterLeague(apikey)), ignore_index=True)
 
 # save 
 createFolder(f"/data1/lolData/cgLeague/API_csv/{args.begin.replace('2021','').replace('-','')}")
