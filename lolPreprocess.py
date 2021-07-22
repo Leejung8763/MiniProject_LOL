@@ -74,12 +74,19 @@ Participant.insert(4, "laneEdit", "None")
 
 """
 Process 1:
+
 Jungle Lane
 1) 강타, 첫 구매템(잉걸불 칼:1035, 빗발칼날:1039)
-2) 2명 이상인 경우, 정글 미니언 갯수
+2) Define Troll Game
+2.1) 강타 x, 정글 템 x 1명 이상
+2.2) 강타 o, 정글 템 x 1명 이상
+2.3) 강타 o, 정글 템 o 2명 이상
+
 Support Lane
-1) 돈템(주문도둑의 검:3850, 영혼의 낫, 고대유물 방패, 강철 어깨 보호대) 구매 여부 확인
-2) 만에 하나 안 샀을 경우, 미니언이 가장 적은 사람
+1) 첫 구매템(주문도둑의 검:3850, 영혼의 낫, 고대유물 방패, 강철 어깨 보호대)
+2) Define Troll Game
+2.1) 서폿 템 x 1명 이상
+2.2) 서폿 템 o 2명 이상
 """
 ## Jungle
 # 정글 아이템 ID
@@ -89,17 +96,24 @@ participantId = MatchEvent.loc[(MatchEvent.reMatch==False)&(MatchEvent.type=='IT
 participantId["laneTmp"] = "jungle"
 participantId.drop_duplicates(keep="last", inplace=True)
 Participant = pd.merge(Participant, participantId, on=["gameId", "participantId"], how="left")
-Participant.loc[((Participant.spell1Id == "11") | (Participant.spell2Id == "11")) & (Participant.laneTmp == "jungle"), "laneEdit"] = "JUNGLE"
+Participant.loc[(Participant.reMatch==False)&((Participant.spell1Id == "11")|(Participant.spell2Id == "11"))&(Participant.laneTmp == "jungle"), "laneEdit"] = "JUNGLE"
 # 각 game, 각 team 정글러 숫자 확인
 Participant = Participant.astype({"laneEdit":"category"})
-jungleCount = Participant.loc[Participant.reMatch==False].groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
+jungleCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
 jungleCount = jungleCount.reset_index(drop=False)
 
-# 팀별 정글러가 1명이 아닌 경우
-# 강타가 없거나, 정글템을 아무도 안 샀을 경우 - 해당 게임은 troll game으로 정의 
-Participant.trollGame.where(~Participant.gameId.isin(jungleCount.loc[jungleCount.jungleIdx==0,"gameId"]), True, inplace=True)
-
-# 정글템을 2명 이상 샀을 경우
+# Define Troll Game
+# 1) 강타 x, 정글 템 x 1명 이상
+if len(jungleCount.loc[jungleCount.jungleIdx==0]) > 0:
+    Participant.trollGame.where(~Participant.gameId.isin(jungleCount.loc[jungleCount.jungleIdx==0,"gameId"]), True, inplace=True)
+# 2) 강타 o, 정글 템 x 1명 이상
+if len(Participant.loc[((Participant.spell1Id == "11")|(Participant.spell2Id == "11"))&(Participant.laneTmp.isna())]) > 0:
+    trollGameLs = Participant.loc[((Participant.spell1Id == "11")|(Participant.spell2Id == "11"))&(Participant.laneTmp.isna()), "gameId"].drop_duplicates().tolist()
+    Participant.loc[Participant.gameId.isin(trollGameLs),"trollGame"] = True
+    Participant.loc[(Participant.reMatch==False)&(Participant.trollGame==True)&((Participant.spell1Id == "11")|(Participant.spell2Id == "11")),"laneEdit"] = "JUNGLE"
+    jungleCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
+    jungleCount = jungleCount.reset_index(drop=False)
+# 3) 강타 o, 정글 템 x 2명 이상
 if len(jungleCount[(jungleCount.laneEdit == "JUNGLE")&(jungleCount.jungleIdx != 1)]) > 0:
     # 문제가 있는 game & team
     jungleError = jungleCount[(jungleCount.jungleIdx != 1)&(jungleCount.laneEdit == "JUNGLE")]
@@ -107,12 +121,12 @@ if len(jungleCount[(jungleCount.laneEdit == "JUNGLE")&(jungleCount.jungleIdx != 
     # game & 팀내 최다 정글 미니언 처치 participant
     jungleErrorCount = jungleError.groupby(["gameId","teamId"]).agg(jungleIdx=("neutralMinionsKilled","idxmax"))
     jungleErrorIdx = jungleErrorCount.reset_index(drop=False)
-    jungleErrorIdx = jungleError.loc[pd.Index(jungleErrorIdx[-jungleErrorIdx.jungleIdx.isnull()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
+    jungleErrorIdx = jungleError.loc[pd.Index(jungleErrorIdx[~jungleErrorIdx.jungleIdx.isnull()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
     jungleErrorIdx["laneTmp2"] = "jungle"
     
     ParticipantTmp = pd.merge(Participant, jungleErrorIdx[["gameId", "teamId"]].astype("string"), on=["gameId", "teamId"], how="inner")
     ParticipantTmp = pd.merge(ParticipantTmp, jungleErrorIdx, on=["gameId", "participantId", "teamId"], how="left")
-    ParticipantTmp.loc[(ParticipantTmp.laneTmp=="jungle")&(ParticipantTmp.laneTmp2!="jungle"), "laneTmp2"] = "nonjungle"
+    ParticipantTmp.loc[(ParticipantTmp.laneEdit=="JUNGLE")&(ParticipantTmp.laneTmp2!="jungle"), "laneTmp2"] = "nonjungle"
     
     Participant = pd.merge(Participant, ParticipantTmp[["gameId", "participantId", "teamId", "laneTmp2"]], on=["gameId", "participantId", "teamId"], how="left")
     Participant.loc[Participant.laneTmp2=="nonjungle", "laneEdit"] = "None"
@@ -137,21 +151,21 @@ supportCount = supportCount.reset_index(drop=False)
 # 팀별 서포터가 1명이 아닌 경우
 if len(supportCount[(supportCount.laneEdit == "SUPPORT")&(supportCount.supportIdx != 1)]) > 0:
     # 문제가 있는 game & team
-    supportError = supportCount[(supportCount.laneEdit=="SUPPORT")&(supportCount.supportIdx != 1)]
+    supportError = supportCount[(supportCount.supportIdx != 1)&(supportCount.laneEdit=="SUPPORT")]
     supportError = pd.merge(Participant, supportError[["gameId","teamId","supportIdx"]], on=["gameId","teamId"], how="inner")
     supportError.loc[:, "totalMinionsKilledSum"] = supportError.loc[:, "totalMinionsKilled"] + supportError.loc[:, "neutralMinionsKilled"]
     # game & 팀내 최소 미니언 처치 participant
     supportErrorCount = supportError.loc[supportError.laneEdit!="JUNGLE"].groupby(["gameId","teamId"]).agg(supportIdx=("totalMinionsKilledSum","idxmin"))
     supportErrorIdx = supportErrorCount.reset_index(drop=False)
-    supportErrorIdx = supportError.loc[pd.Index(supportErrorIdx[-supportErrorIdx.supportIdx.isnull()].astype({"supportIdx":"int"}).supportIdx.tolist()), ["gameId","participantId", "teamId"]]
+    supportErrorIdx = supportError.loc[pd.Index(supportErrorIdx[~supportErrorIdx.supportIdx.isnull()].astype({"supportIdx":"int"}).supportIdx.tolist()), ["gameId","participantId", "teamId"]]
     supportErrorIdx["laneTmp2"] = "support"
 
     ParticipantTmp = pd.merge(Participant, supportErrorIdx[["gameId", "teamId"]], on=["gameId", "teamId"], how="inner")
     ParticipantTmp = pd.merge(ParticipantTmp, supportErrorIdx, on=["gameId", "participantId", "teamId"], how="left")
-    ParticipantTmp.loc[ParticipantTmp.laneTmp2!="support", "laneTmp2"] = "nonsupport"
+    ParticipantTmp.loc[(ParticipantTmp.laneEdit=="SUPPORT")&(ParticipantTmp.laneTmp2!="support"), "laneTmp2"] = "nonsupport"
 
     Participant = pd.merge(Participant, ParticipantTmp[["gameId", "participantId", "teamId", "laneTmp2"]], on=["gameId", "participantId", "teamId"], how="left")
-    Participant.loc[(Participant.laneEdit!="JUNGLE")&(Participant.laneTmp=="support")&(Participant.laneTmp2=="nonsupport"), "laneEdit"] = "None"
+    Participant.loc[(Participant.laneEdit!="JUNGLE")&(Participant.laneEdit=="SUPPORT")&(Participant.laneTmp2=="nonsupport"), "laneEdit"] = "None"
     Participant.loc[(Participant.laneTmp!="JUNGLE")&(Participant.laneTmp2=="support"), "laneEdit"] = "SUPPORT"
 Participant = Participant.drop(["laneTmp", "laneTmp2"], axis=1, errors="ignore")
 Participant = Participant.astype({"laneEdit":"string"})
