@@ -1,6 +1,6 @@
 .ipynb_checkpoints/
 APIData/
-RefData/
+#RefData/
 SummonerList/
 __pycache__/
 
