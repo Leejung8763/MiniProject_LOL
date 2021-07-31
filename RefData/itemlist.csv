@@ -1,165 +1,221 @@
-﻿category,position,name_Kor,name_Eng
-시작,,잉걸불 칼,Emberknife
-시작,,빗발칼날,Hailblade
-시작,,암흑의 인장,Dark Seal
-시작,,도란의 반지,Doran's Ring
-시작,,여신의 눈물,Tear of the Goddess
-시작,,영혼의 낫,Spectral Sickle
-시작,,해로윙 초승달낫,Harrowing Crescent
-시작,,검은 안개 낫,Black Mist Scythe
-시작,,주문도둑의 검,Spellthief's Edge
-시작,,얼음 송곳니,Frostfang
-시작,,얼음 정수의 파편,Shard of True Ice
-시작,,강철 어깨 보호대,Steel Shoulderguards
-시작,,룬 강철 어깨 갑옷,Runesteel Spaulders
-시작,,화이트록의 갑옷,Pauldrons of Whiterock
-시작,,고대유물 방패,Relic Shield
-시작,,타곤 산의 방패,Targon's Buckler
-시작,,타곤 산의 방벽,Bulwark of the Mountain
-시작,,도란의 방패,Doran's Shield
-시작,,도란의 검,Doran's Blade
-시작,,수확의 낫,Cull
-기본,,원기 회복의 구슬,Rejuvenation Bead
-기본,,요정의 부적,Faerie Charm
-기본,,천 갑옷,Cloth Armor
-기본,,단검,Dagger
-기본,,사파이어 수정,Sapphire Crystal
-기본,,롱소드,Long Sword
-기본,,루비 수정,Ruby Crystal
-기본,,증폭의 고서,Amplifying Tome
-기본,,마법무효화의 망토,Null-Magic Mantle
-기본,,민첩성의 망토,Cloak of Agility
-기본,,초시계,Stopwatch
-기본,,망가진 초시계,Broken Stopwatch
-기본,,방출의 마법봉,Blasting Wand
-기본,,곡괭이,Pickaxe
-기본,,쓸데없이 큰 지팡이,Needlessly Large Rod
-기본,,B.F. 대검,B.F. Sword
-서사,,바미의 불씨,Bami's Cinder
-서사,,사라진 양피지,Lost Chapter
-서사,,흡수의 시선,Leeching Leer
-서사,,절정의 화살,Noonquiver
-서사,,강철가시 채찍,Ironspike Whip
-서사,,수정 팔 보호구,Crystalline Bracer
-서사,,광휘의 검,Sheen
-서사,,키르히아이스의 파편,Kircheis Shard
-서사,,쇠사슬 조끼,Chain Vest
-서사,,비상의 월갑,Winged Moonplate
-서사,,점화석,Kindlegem
-서사,,덤불 조끼,Bramble Vest
-서사,,금지된 우상,Forbidden Idol
-서사,,처형인의 대검,Executioner's Calling
-서사,,망각의 구,Oblivion Orb
-서사,,분노의 칼,Rageknife
-서사,,에테르 환영,Aether Wisp
-서사,,거인의 허리띠,Giant's Belt
-서사,,흡혈의 낫,Vampiric Scepter
-서사,,음전자 망토,Negatron Cloak
-서사,,얼음 방패,Glacial Buckler
-서사,,악마의 마법서,Fiendish Codex
-서사,,추적자의 팔목 보호대,Seeker's Armguard
-서사,,밴들유리 거울,Bandleglass Mirror
-서사,,곡궁,Recurve Bow
-서사,,파수꾼의 갑옷,Warden's Mail
-서사,,열정의 검,Zeal
-서사,,마법공학 교류 발전기,Hextech Alternator
-서사,,탐식의 망치,Phage
-서사,,온기가 필요한 자의 도끼,Hearthbound Axe
-서사,,콜필드의 전투 망치,Caulfield's Warhammer
-서사,,톱날 단검,Serrated Dirk
-서사,,고무의 와드석,Stirring Wardstone
-서사,,감시하는 와드석,Watchful Wardstone
-서사,,티아맷,Tiamat
-서사,,신록의 장벽,Verdant Barrier
-서사,,망령의 두건,Spectre's Cowl
-서사,,역병의 보석,Blighting Jewel
-서사,,수은 장식띠,Quicksilver Sash
-서사,,주문포식자,Hexdrinker
-서사,,최후의 속삭임,Last Whisper
-서사,,군단의 방패,Aegis of the Legion
-전설,암살자,그림자 검,Ubmral Glaive
-전설,암살자,독사의 송곳니,Serpent's Fang
-전설,암살자,밤의 끝자락,Edge of Night
-전설,암살자,요우무의 유령검,Youmuu's Ghostblade
-전설,암살자,핏빛 칼날,Sanguine Blade
-전설,암살자,세릴다의 원한,Serylda's Grudge
-전설,전사,화공 펑크 사슬검,Chempunk Chainsword
-전설,전사,수호 천사,Guardian Angel
-전설,전사,마나무네,Manamune
-전설,전사,무라마나,Muramana
-전설,전사,은빛 여명,Silvermere Dawn
-전설,전사,스테락의 도전,Sterak's Gage
-전설,전사,마법사의 최후,Wit's End
-전설,전사,맬보셔스의 아귀,Maw of Malmortius
-전설,전사,죽음의 무도,Death's Dance
-전설,전사,몰락한 왕의 검,Blade of the Ruined King
-전설,전사,칠흑의 양날 도끼,Black Cleaver
-전설,전사,굶주린 히드라,Ravenous Hydra
-전설,전사,거대한 히드라,Titanic Hydra
-전설,마법사,메자이의 영혼약탈자,Mejai's Soulstealer
-전설,마법사,밴시의 장막,Banshee's Veil
-전설,마법사,공허의 지팡이,Void Staff
-전설,마법사,존야의 모래시계,Zhonya's Hourglass
-전설,마법사,모렐로노미콘,Morellonomicon
-전설,마법사,대천사의 지팡이,Archangel's Staff
-전설,마법사,대천사의 포옹,Seraph's Embrace
-전설,마법사,리치베인,Lich Bane
-전설,마법사,내셔의 이빨,Nashor's Tooth
-전설,마법사,라일라이의 수정홀,Rylai's Crystal Scepter
-전설,마법사,지평선의 초점,Horizon Focus
-전설,마법사,우주의 추진력,Cosmic Drive
-전설,마법사,악마의 포옹,Demonic Embrace
-전설,마법사,라바돈의 죽음모자,Rabadon's Deathcap
-전설,원거리 딜러,필멸자의 운명,Mortal Reminder
-전설,원거리 딜러,고속 연사포,Rapid Firecannon
-전설,원거리 딜러,유령 무희,Phantom Dancer
-전설,원거리 딜러,루난의 허리케인,Runaan's Hurricane
-전설,원거리 딜러,폭풍갈퀴,Stormrazor
-전설,원거리 딜러,구인수의 격노검,Guinsoo's Rageblade
-전설,원거리 딜러,도미닉 경의 인사,Lord Dominik's Regards
-전설,원거리 딜러,정수 약탈자,Essence Reaver
-전설,원거리 딜러,헤르메스의 시미터,Mercurial Scimitar
-전설,원거리 딜러,징수의 총,The Collector
-전설,원거리 딜러,무한의 대검,Infinity Edge
-전설,원거리 딜러,피바라기,Bloodthirster
-전설,원거리 딜러,나보리 신속검,Navori's Quick blade
-전설,서포터,구원,Redemption
-전설,서포터,기사의 맹세,Knight's Vow
-전설,서포터,미카엘의 축복,Mikael's Blessing
-전설,서포터,불타는 향로,Ardent Censer
-전설,서포터,경계의 와드석,Vigilant Wardstone
-전설,서포터,흐르는 물의 지팡이,Staff of Flowing Water
-전설,서포터,화학공학 부패기,Chemtech Putrifier
-전설,서포터,지크의 융합,Zeke's Convergence
-전설,탱커,심연의 가면,Abyssal Mask
-전설,탱커,가시 갑옷,Thornmail
-전설,탱커,얼어붙은 심장,Frozen Heart
-전설,탱커,란두인의 예언,Randuin's Omen
-전설,탱커,정령의 형상,Spirit Visage
-전설,탱커,망자의 갑옷,Dead Man's Plate
-전설,탱커,대자연의 힘,Force of Nature
-전설,탱커,워모그의 갑옷,Warmog's Armor
-전설,탱커,가고일 돌갑옷,Gargoyle Stoneplate
-신화,원거리 딜러,돌풍,Galeforce
-신화,원거리 딜러,크라켄 학살자,Kraken Slayer
-신화,원거리 딜러,불멸의 철갑궁,Immortal Shieldbow
-신화,탱커,태양불꽃 방패,Sunfire Aegis
-신화,탱커,서리불꽃 건틀릿,Frostfire Gauntlet
-신화,탱커,터보 화공 탱크,Turbo Chemtank
-신화,암살자,드락사르의 황혼검,Duskblade of Draktharr
-신화,암살자,월식,Eclipse
-신화,암살자,자객의 발톱,Prowler's Claw
-신화,마법사,리안드리의 고뇌,Liandry's Anguish
-신화,마법사,루덴의 폭풍,Luden's Tempest
-신화,마법사,만년서리,Everfrost
-신화,마법사,마법공학 로켓 벨트,Hextech Rocketbelt
-신화,마법사,균열 생성기,Riftmaker
-신화,마법사,밤의 수확자,Night Harvester
-신화,전사,삼위일체,Trinity Force
-신화,전사,선혈포식자,Goredrinker
-신화,전사,발걸음 분쇄기,Stridebreaker
-신화,전사,신성한 파괴자,Divine Sunderer
-신화,서포터,슈렐리아의 군가,Shurelya's Battlesong
-신화,서포터,강철의 솔라리 펜던트,Locket of the Iron Solari
-신화,서포터,월석 재생기,Moonstone Renewer
-신화,서포터,제국의 명령,Imperial Mandate
+﻿itemId,gameName,class_main,class_middle,class_sub,producer,name_Kr,name_En
+1001,소환사의 협곡,장화,,,,장화,Boots
+1004,소환사의 협곡,기본,,,,요정의 부적,Faerie Charm
+1006,소환사의 협곡,기본,,,,원기 회복의 구슬,Rejuvenation Bead
+1011,소환사의 협곡,서사,,,,거인의 허리띠,Giant's Belt
+1018,소환사의 협곡,기본,,,,민첩성의 망토,Cloak of Agility
+1026,소환사의 협곡,기본,,,,방출의 마법봉,Blasting Wand
+1027,소환사의 협곡,기본,,,,사파이어 수정,Sapphire Crystal
+1028,소환사의 협곡,기본,,,,루비 수정,Ruby Crystal
+1029,소환사의 협곡,기본,,,,천 갑옷,Cloth Armor
+1031,소환사의 협곡,서사,,,,쇠사슬 조끼,Chain Vest
+1033,소환사의 협곡,기본,,,,마법무효화의 망토,Null-Magic Mantle
+1035,소환사의 협곡,시작,,,,잉걸불 칼,Emberknife
+1036,소환사의 협곡,기본,,,,롱소드,Long Sword
+1037,소환사의 협곡,기본,,,,곡괭이,Pickaxe
+1038,소환사의 협곡,기본,,,,B.F. 대검,B.F. Sword
+1039,소환사의 협곡,시작,,,,빗발칼날,Hailblade
+1042,소환사의 협곡,기본,,,,단검,Dagger
+1043,소환사의 협곡,서사,,,,곡궁,Recurve Bow
+1052,소환사의 협곡,기본,,,,증폭의 고서,Amplifying Tome
+1053,소환사의 협곡,서사,,,,흡혈의 낫,Vampiric Scepter
+1054,소환사의 협곡,시작,,,,도란의 방패,Doran's Shield
+1055,소환사의 협곡,시작,,,,도란의 검,Doran's Blade
+1056,소환사의 협곡,시작,,,,도란의 반지,Doran's Ring
+1057,소환사의 협곡,서사,,,,음전자 망토,Negatron Cloak
+1058,소환사의 협곡,기본,,,,쓸데없이 큰 지팡이,Needlessly Large Rod
+1082,소환사의 협곡,시작,,,,암흑의 인장,Dark Seal
+1083,소환사의 협곡,시작,,,,수확의 낫,Cull
+2003,소환사의 협곡,소모품,물약,,,체력 물약,Health Potion
+2010,소환사의 협곡,소모품,,,영감 룬,굳건한 의지의 완전한 비스킷,Total Biscuit of Everlasting Will
+2015,소환사의 협곡,서사,,,,키르히아이스의 파편,Kircheis Shard
+2031,소환사의 협곡,소모품,물약,,,충전형 물약,Refillable Potion
+2033,소환사의 협곡,소모품,물약,,,부패 물약,Corrupting Potion
+2051,칼바람 나락,,,,,수호자의 뿔피리,Guardian's Horn
+2052,칼바람 나락,,,,,포로 간식,Poro-Snax
+2055,소환사의 협곡,소모품,제어 와드,,,제어 와드,Control Ward
+2065,소환사의 협곡,신화,서포터,,,슈렐리아의 군가,Shurelya's Battlesong
+2138,소환사의 협곡,소모품,영약,,,강철의 영약,Elixir of Iron
+2139,소환사의 협곡,소모품,영약,,,마법의 영약,Elixir of Sorcery
+2140,소환사의 협곡,소모품,영약,,,분노의 영약,Elixir of Wrath
+2403,소환사의 협곡,소모품,,,영감 룬,미니언 해체분석기,Minion Dematerializer
+2419,소환사의 협곡,기본,,,영감 룬,초시계 키트,Commencing Stopwatch
+2420,소환사의 협곡,기본,,,,초시계,Stopwatch
+2421,소환사의 협곡,기본,,,,망가진 초시계,Broken Stopwatch
+2422,소환사의 협곡,장화,,,,약간 신비한 신발,Slightly Magical Boots
+2423,소환사의 협곡,기본,,,,완벽한 초시계,Perfectly Timed Stopwatch
+2424,소환사의 협곡,기본,,,,망가진 초시계,Broken Stopwatch
+3001,소환사의 협곡,전설,탱커,,,심연의 가면,Abyssal Mask
+3003,소환사의 협곡,전설,마법사,,,대천사의 지팡이,Archangel's Staff
+3004,소환사의 협곡,전설,전사,,,마나무네,Manamune
+3006,소환사의 협곡,장화,,,,광전사의 군화,Berserker's Greaves
+3009,소환사의 협곡,장화,,,,신속의 장화,Boots of Swiftness
+3011,소환사의 협곡,전설,서포터,,,화학공학 부패기,Chemtech Putrifier
+3020,소환사의 협곡,장화,,,,마법사의 신발,Sorcerer's Shoes
+3024,소환사의 협곡,서사,,,,얼음 방패,Glacial Buckler
+3026,소환사의 협곡,전설,전사,,,수호 천사,Guardian Angel
+3031,소환사의 협곡,전설,원거리 딜러,,,무한의 대검,Infinity Edge
+3033,소환사의 협곡,전설,원거리 딜러,,,필멸자의 운명,Mortal Reminder
+3035,소환사의 협곡,서사,,,,최후의 속삭임,Last Whisper
+3036,소환사의 협곡,전설,원거리 딜러,,,도미닉 경의 인사,Lord Dominik's Regards
+3040,소환사의 협곡,전설,마법사,,,대천사의 포옹,Seraph's Embrace
+3041,소환사의 협곡,전설,마법사,,,메자이의 영혼약탈자,Mejai's Soulstealer
+3042,소환사의 협곡,전설,전사,,,무라마나,Muramana
+3044,소환사의 협곡,서사,,,,탐식의 망치,Phage
+3046,소환사의 협곡,전설,원거리 딜러,,,유령 무희,Phantom Dancer
+3047,소환사의 협곡,장화,,,,판금 장화,Plated Steelcaps
+3050,소환사의 협곡,전설,서포터,,,지크의 융합,Zeke's Convergence
+3051,소환사의 협곡,서사,,,,온기가 필요한 자의 도끼,Hearthbound Axe
+3053,소환사의 협곡,전설,전사,,,스테락의 도전,Sterak's Gage
+3057,소환사의 협곡,서사,,,,광휘의 검,Sheen
+3065,소환사의 협곡,전설,탱커,,,정령의 형상,Spirit Visage
+3066,소환사의 협곡,서사,,,,비상의 월갑,Winged Moonplate
+3067,소환사의 협곡,서사,,,,점화석,Kindlegem
+3068,소환사의 협곡,신화,탱커,,,태양불꽃 방패,Sunfire Aegis
+3070,소환사의 협곡,시작,,,,여신의 눈물,Tear of the Goddess
+3071,소환사의 협곡,전설,전사,,,칠흑의 양날 도끼,Black Cleaver
+3072,소환사의 협곡,전설,원거리 딜러,,,피바라기,Bloodthirster
+3074,소환사의 협곡,전설,전사,,,굶주린 히드라,Ravenous Hydra
+3075,소환사의 협곡,전설,탱커,,,가시 갑옷,Thornmail
+3076,소환사의 협곡,서사,,,,덤불 조끼,Bramble Vest
+3077,소환사의 협곡,서사,,,,티아맷,Tiamat
+3078,소환사의 협곡,신화,전사,공격력,,삼위일체,Trinity Force
+3082,소환사의 협곡,서사,,,,파수꾼의 갑옷,Warden's Mail
+3083,소환사의 협곡,전설,탱커,,,워모그의 갑옷,Warmog's Armor
+3085,소환사의 협곡,전설,원거리 딜러,,,루난의 허리케인,Runaan's Hurricane
+3086,소환사의 협곡,서사,,,,열정의 검,Zeal
+3089,소환사의 협곡,전설,마법사,,,라바돈의 죽음모자,Rabadon's Deathcap
+3091,소환사의 협곡,전설,전사,,,마법사의 최후,Wit's End
+3094,소환사의 협곡,전설,원거리 딜러,,,고속 연사포,Rapid Firecannon
+3095,소환사의 협곡,전설,원거리 딜러,,,폭풍갈퀴,Stormrazor
+3100,소환사의 협곡,전설,마법사,,,리치베인,Lich Bane
+3102,소환사의 협곡,전설,마법사,,,밴시의 장막,Banshee's Veil
+3105,소환사의 협곡,서사,,,,군단의 방패,Aegis of the Legion
+3107,소환사의 협곡,전설,서포터,,,구원,Redemption
+3108,소환사의 협곡,서사,,,,악마의 마법서,Fiendish Codex
+3109,소환사의 협곡,전설,서포터,,,기사의 맹세,Knight's Vow
+3110,소환사의 협곡,전설,탱커,,,얼어붙은 심장,Frozen Heart
+3111,소환사의 협곡,장화,,,,헤르메스의 발걸음,Mercury's Treads
+3112,칼바람 나락,,,,,수호자의 보주,Guardian's Orb
+3113,소환사의 협곡,서사,,,,에테르 환영,Aether Wisp
+3114,소환사의 협곡,서사,,,,금지된 우상,Forbidden Idol
+3115,소환사의 협곡,전설,마법사,,,내셔의 이빨,Nashor's Tooth
+3116,소환사의 협곡,전설,마법사,,,라일라이의 수정홀,Rylai's Crystal Scepter
+3117,소환사의 협곡,장화,,,,기동력의 장화,Boots of Mobility
+3123,소환사의 협곡,서사,,,,처형인의 대검,Executioner's Calling
+3124,소환사의 협곡,전설,원거리 딜러,,,구인수의 격노검,Guinsoo's Rageblade
+3133,소환사의 협곡,서사,,,,콜필드의 전투 망치,Caulfield's Warhammer
+3134,소환사의 협곡,서사,,,,톱날 단검,Serrated Dirk
+3135,소환사의 협곡,전설,마법사,,,공허의 지팡이,Void Staff
+3139,소환사의 협곡,전설,원거리 딜러,,,헤르메스의 시미터,Mercurial Scimitar
+3140,소환사의 협곡,서사,,,,수은 장식띠,Quicksilver Sash
+3142,소환사의 협곡,전설,암살자,,,요우무의 유령검,Youmuu's Ghostblade
+3143,소환사의 협곡,전설,탱커,,,란두인의 예언,Randuin's Omen
+3145,소환사의 협곡,서사,,,,마법공학 교류 발전기,Hextech Alternator
+3152,소환사의 협곡,신화,마법사,마나 없음,,마법공학 로켓 벨트,Hextech Rocketbelt
+3153,소환사의 협곡,전설,전사,,,몰락한 왕의 검,Blade of the Ruined King
+3155,소환사의 협곡,서사,,,,주문포식자,Hexdrinker
+3156,소환사의 협곡,전설,전사,,,맬모셔스의 아귀,Maw of Malmortius
+3157,소환사의 협곡,전설,마법사,,,존야의 모래시계,Zhonya's Hourglass
+3158,소환사의 협곡,장화,,,,명석함의 아이오니아 장화,Ionian Boots of Lucidity
+3165,소환사의 협곡,전설,마법사,,,모렐로노미콘,Morellonomicon
+3177,칼바람 나락,,,,,수호자의 검,Guardian's Blade
+3179,소환사의 협곡,전설,암살자,,,그림자 검,Ubmral Glaive
+3181,소환사의 협곡,전설,전사,,,선체파괴자,Hullbreaker
+3184,칼바람 나락,,,,,수호자의 망치,Guardian's Hammer
+3190,소환사의 협곡,신화,서포터,,,강철의 솔라리 펜던트,Locket of the Iron Solari
+3191,소환사의 협곡,서사,,,,추적자의 팔목 보호대,Seeker's Armguard
+3193,소환사의 협곡,전설,탱커,,,가고일 돌갑옷,Gargoyle Stoneplate
+3211,소환사의 협곡,서사,,,,망령의 두건,Spectre's Cowl
+3222,소환사의 협곡,전설,서포터,,,미카엘의 축복,Mikael's Blessing
+3330,소환사의 협곡,특정 챔피언 전용 아이템,,,피들스틱,허수아비,Scarecrow Effigy
+3340,소환사의 협곡,소모품,장신구,,,투명 와드,Warding Totem
+3363,소환사의 협곡,소모품,장신구,,,망원형 개조,Farsight Alteration
+3364,소환사의 협곡,소모품,장신구,,,예언자의 렌즈,Oracle Lens
+3400,소환사의 협곡,특정 챔피언 전용 아이템,,,파이크,수당,Your Cut
+3504,소환사의 협곡,전설,서포터,,,불타는 향로,Ardent Censer
+3508,소환사의 협곡,전설,원거리 딜러,,,정수 약탈자,Essence Reaver
+3513,소환사의 협곡,소모품,,,,전령의 눈,Eye of the Herald
+3599,소환사의 협곡,특정 챔피언 전용 아이템,,,칼리스타,칼리스타의 칠흑의 창,Black Spear
+3742,소환사의 협곡,전설,탱커,,,망자의 갑옷,Dead Man's Plate
+3748,소환사의 협곡,전설,전사,,,거대한 히드라,Titanic Hydra
+3801,소환사의 협곡,서사,,,,수정 팔 보호구,Crystalline Bracer
+3802,소환사의 협곡,서사,신화급 기본 아이템,,,사라진 양피지,Lost Chapter
+3814,소환사의 협곡,전설,암살자,,,밤의 끝자락,Edge of Night
+3850,소환사의 협곡,시작,,,,주문도둑의 검,Spellthief's Edge
+3851,소환사의 협곡,시작,,,,얼음 송곳니,Frostfang
+3853,소환사의 협곡,시작,,,,얼음 정수의 파편,Shard of True Ice
+3854,소환사의 협곡,시작,,,,강철 어깨 보호대,Steel Shoulderguards
+3855,소환사의 협곡,시작,,,,룬 강철 어깨 갑옷,Runesteel Spaulders
+3857,소환사의 협곡,시작,,,,화이트록의 갑옷,Pauldrons of Whiterock
+3858,소환사의 협곡,시작,,,,고대유물 방패,Relic Shield
+3859,소환사의 협곡,시작,,,,타곤 산의 방패,Targon's Buckler
+3860,소환사의 협곡,시작,,,,타곤 산의 방벽,Bulwark of the Mountain
+3862,소환사의 협곡,시작,,,,영혼의 낫,Spectral Sickle
+3863,소환사의 협곡,시작,,,,해로윙 초승달낫,Harrowing Crescent
+3864,소환사의 협곡,시작,,,,검은 안개 낫,Black Mist Scythe
+3916,소환사의 협곡,서사,,,,망각의 구,Oblivion Orb
+4005,소환사의 협곡,신화,서포터,,,제국의 명령,Imperial Mandate
+4401,소환사의 협곡,전설,탱커,,,대자연의 힘,Force of Nature
+4628,소환사의 협곡,전설,마법사,,,지평선의 초점,Horizon Focus
+4629,소환사의 협곡,전설,마법사,,,우주의 추진력,Cosmic Drive
+4630,소환사의 협곡,서사,,,,역병의 보석,Blighting Jewel
+4632,소환사의 협곡,서사,,,,신록의 장벽,Verdant Barrier
+4633,소환사의 협곡,신화,마법사,마나 없음,,균열 생성기,Riftmaker
+4635,소환사의 협곡,서사,신화급 기본 아이템,,,흡수의 시선,Leeching Leer
+4636,소환사의 협곡,신화,마법사,마나 없음,,밤의 수확자,Night Harvester
+4637,소환사의 협곡,전설,마법사,,,악마의 포옹,Demonic Embrace
+4638,소환사의 협곡,서사,,,,감시하는 와드석,Watchful Wardstone
+4642,소환사의 협곡,서사,,,,밴들유리 거울,Bandleglass Mirror
+4643,소환사의 협곡,전설,서포터,,,경계의 와드석,Vigilant Wardstone
+6029,소환사의 협곡,서사,신화급 기본 아이템,,,강철가시 채찍,Ironspike Whip
+6035,소환사의 협곡,전설,전사,,,은빛 여명,Silvermere Dawn
+6333,소환사의 협곡,전설,전사,,,죽음의 무도,Death's Dance
+6609,소환사의 협곡,전설,전사,,,화공 펑크 사슬검,Chempunk Chainsword
+6616,소환사의 협곡,전설,서포터,,,흐르는 물의 지팡이,Staff of Flowing Water
+6617,소환사의 협곡,신화,서포터,,,월석 재생기,Moonstone Renewer
+6630,소환사의 협곡,신화,전사,공격력,,선혈포식자,Goredrinker
+6631,소환사의 협곡,신화,전사,공격력,,발걸음 분쇄기,Stridebreaker
+6632,소환사의 협곡,신화,전사,공격력,,신성한 파괴자,Divine Sunderer
+6653,소환사의 협곡,신화,마법사,마나,,리안드리의 고뇌,Liandry's Anguish
+6655,소환사의 협곡,신화,마법사,마나,,루덴의 폭풍,Luden's Tempest
+6656,소환사의 협곡,신화,마법사,마나,,만년서리,Everfrost
+6660,소환사의 협곡,서사,신화급 기본 아이템,,,바미의 불씨,Bami's Cinder
+6662,소환사의 협곡,신화,탱커,,,서리불꽃 건틀릿,Frostfire Gauntlet
+6664,소환사의 협곡,신화,탱커,,,터보 화공 탱크,Turbo Chemtank
+6670,소환사의 협곡,서사,신화급 기본 아이템,,,절정의 화살,Noonquiver
+6671,소환사의 협곡,신화,원거리 딜러,,,돌풍,Galeforce
+6672,소환사의 협곡,신화,원거리 딜러,,,크라켄 학살자,Kraken Slayer
+6673,소환사의 협곡,신화,원거리 딜러,,,불멸의 철갑궁,Immortal Shieldbow
+6675,소환사의 협곡,전설,원거리 딜러,,,나보리 신속검,Navori's Quick blade
+6676,소환사의 협곡,전설,원거리 딜러,,,징수의 총,The Collector
+6677,소환사의 협곡,서사,,,,분노의 칼,Rageknife
+6691,소환사의 협곡,신화,암살자,공격력,,드락사르의 황혼검,Duskblade of Draktharr
+6692,소환사의 협곡,신화,암살자,공격력,,월식,Eclipse
+6693,소환사의 협곡,신화,암살자,공격력,,자객의 발톱,Prowler's Claw
+6694,소환사의 협곡,전설,암살자,,,세릴다의 원한,Serylda's Grudge
+6695,소환사의 협곡,전설,암살자,,,독사의 송곳니,Serpent's Fang
+7000,소환사의 협곡,신화,공격력 기반 암살자,,오른,암살자의 발톱,Sandshrike's Claw
+7001,소환사의 협곡,신화,공격력 기반 암살자,,오른,천체 정렬,Syzygy
+7002,소환사의 협곡,신화,공격력 기반 암살자,,오른,드락사르의 암흑검,Draktharr's Shadowcarver
+7003,소환사의 협곡,신화,탱커,,오른,터보 충전 마공학 실험장치,Turbocharged Hexperiment
+7004,소환사의 협곡,신화,탱커,,오른,대장간 불꽃 문장,Forgefire Crest
+7005,소환사의 협곡,신화,탱커,,오른,서리벼림 손아귀,Rimeforged Grasp
+7006,소환사의 협곡,신화,원거리 딜러,,오른,태풍,Typhoon
+7007,소환사의 협곡,신화,원거리 딜러,,오른,쓰러진 용의 제물,Wyrmfallen Sacrifice
+7008,소환사의 협곡,신화,원거리 딜러,,오른,핏빛 철갑궁,Bloodward
+7009,소환사의 협곡,신화,마법사,마나 없음,오른,이케시아의 저주,Icathia's Curse
+7010,소환사의 협곡,신화,마법사,마나 없음,오른,어스름의 기원,Vespertide
+7011,소환사의 협곡,신화,마법사,마나 없음,오른,업그레이드 비행팩,Upgraded Aeropack
+7012,소환사의 협곡,신화,마법사,마나,오른,리안드리의 슬픔,Liandry's Lament
+7013,소환사의 협곡,신화,마법사,마나,오른,루덴의 눈,Eye of Luden
+7014,소환사의 협곡,신화,마법사,마나,오른,영원한 겨울,Eternal Winter
+7015,소환사의 협곡,신화,공격력 기반 전사,,오른,무한한 허기,Ceaseless Hunger
+7016,소환사의 협곡,신화,공격력 기반 전사,,오른,몽상파쇄자,Dreamshatter
+7017,소환사의 협곡,신화,공격력 기반 전사,,오른,신성시해자,Deicide
+7018,소환사의 협곡,신화,공격력 기반 전사,,오른,무한한 삼위일체,Infinity Force
+7019,소환사의 협곡,신화,강화형 보조술사,,오른,황금 새벽의 유물함,Reliquary of the Golden Sister
+7020,소환사의 협곡,신화,강화형 보조술사,,오른,슈렐리아의 진혼곡,Shurelya's Requiem
+7021,소환사의 협곡,신화,강화형 보조술사,,오른,성운 투척기,Starcaster
+7022,소환사의 협곡,신화,강화형 보조술사,,오른,지휘관의 입지,Seat of Command
+8001,소환사의 협곡,전설,탱커,,,증오의 사슬,Anathema's Chains
