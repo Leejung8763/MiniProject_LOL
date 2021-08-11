@@ -3,7 +3,6 @@ import lolApi, lolRef
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-import matplotlib.pyplot as plt
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
@@ -29,7 +28,12 @@ if (args.begin != yesterday) & (args.end == today):
     args.end = (datetime.datetime.strptime(args.begin, '%Y-%m-%d') + datetime.timedelta(1)).strftime("%Y-%m-%d")
 
 # reference data
-ref = lolRef.lolRef()
+try:
+    ref = lolRef.Ref()
+except:
+    time.sleep(30)
+    ref = lolRef.Ref()
+    
 # api
 with open("/home/lj/git/MiniProject_LOL/APIData/product_keys.txt") as f:
     apiList = f.readlines()
@@ -63,13 +67,13 @@ reGameId = durationGameId&turretGameId
 def rematch(data, idlist):
     data.insert(1,"reMatch", True)
     data["reMatch"] = np.where(data.gameId.isin(idlist), True, False)
-for data in [Match, MatchReference, TeamStats, Participant, ParticipantIdentity, MatchParticipantFrame, MatchEvent]:
+for data in [Match, MatchReference, TeamStats, Participant, ParticipantIdentity, MatchTimeline, MatchFrame, MatchParticipantFrame, MatchEvent]:
     rematch(data, reGameId)
     del data
 
 # lane 정보 수정하기
 # MatchTemp 결과값 수집
-Participant.insert(2, "trollGame", False)
+Participant.insert(2, "trollGame", "NORM")
 Participant.insert(4, "laneEdit", "None")
 
 """
@@ -83,11 +87,12 @@ Jungle Lane
 2.3) 강타 o, 정글 템 o 2명 이상
 
 Support Lane
-1) 첫 구매템(주문도둑의 검:3850, 영혼의 낫, 고대유물 방패, 강철 어깨 보호대)
+1) 첫 구매템(주문도둑의 검:3850, 영혼의 낫:3862, 고대유물 방패:3858, 강철 어깨 보호대:3854)
 2) Define Troll Game
 2.1) 서폿 템 x 1명 이상
 2.2) 서폿 템 o 2명 이상
 """
+
 ## Jungle
 # 정글 아이템 ID
 jungleItemId = ref.itemInfoDto.loc[ref.itemInfoDto.name.str.contains("잉걸불 칼|빗발칼날"), "itemId"].astype("category")
@@ -96,42 +101,83 @@ participantId = MatchEvent.loc[(MatchEvent.reMatch==False)&(MatchEvent.type=='IT
 participantId["laneTmp"] = "jungle"
 participantId.drop_duplicates(keep="last", inplace=True)
 Participant = pd.merge(Participant, participantId, on=["gameId", "participantId"], how="left")
-Participant.loc[(Participant.reMatch==False)&((Participant.spell1Id == "11")|(Participant.spell2Id == "11"))&(Participant.laneTmp == "jungle"), "laneEdit"] = "JUNGLE"
-# 각 game, 각 team 정글러 숫자 확인
+Participant.loc[(Participant.reMatch==False)&((Participant.spell1Id=="11")|(Participant.spell2Id=="11"))&(Participant.laneTmp=="jungle"), "laneEdit"] = "JUNGLE"
 Participant = Participant.astype({"laneEdit":"category"})
-jungleCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
-jungleCount = jungleCount.reset_index(drop=False)
 
 # Define Troll Game
-# 1) 강타 x, 정글 템 x 1명 이상
-if len(jungleCount.loc[jungleCount.jungleIdx==0]) > 0:
-    Participant.trollGame.where(~Participant.gameId.isin(jungleCount.loc[jungleCount.jungleIdx==0,"gameId"]), True, inplace=True)
-# 2) 강타 o, 정글 템 x 1명 이상
-if len(Participant.loc[((Participant.spell1Id == "11")|(Participant.spell2Id == "11"))&(Participant.laneTmp.isna())]) > 0:
-    trollGameLs = Participant.loc[((Participant.spell1Id == "11")|(Participant.spell2Id == "11"))&(Participant.laneTmp.isna()), "gameId"].drop_duplicates().tolist()
-    Participant.loc[Participant.gameId.isin(trollGameLs),"trollGame"] = True
-    Participant.loc[(Participant.reMatch==False)&(Participant.trollGame==True)&((Participant.spell1Id == "11")|(Participant.spell2Id == "11")),"laneEdit"] = "JUNGLE"
-    jungleCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
-    jungleCount = jungleCount.reset_index(drop=False)
-# 3) 강타 o, 정글 템 x 2명 이상
-if len(jungleCount[(jungleCount.laneEdit == "JUNGLE")&(jungleCount.jungleIdx != 1)]) > 0:
-    # 문제가 있는 game & team
-    jungleError = jungleCount[(jungleCount.jungleIdx != 1)&(jungleCount.laneEdit == "JUNGLE")]
-    jungleError = pd.merge(Participant, jungleError[["gameId","teamId","jungleIdx"]], on=["gameId","teamId"], how="inner")
-    # game & 팀내 최다 정글 미니언 처치 participant
-    jungleErrorCount = jungleError.groupby(["gameId","teamId"]).agg(jungleIdx=("neutralMinionsKilled","idxmax"))
-    jungleErrorIdx = jungleErrorCount.reset_index(drop=False)
-    jungleErrorIdx = jungleError.loc[pd.Index(jungleErrorIdx[~jungleErrorIdx.jungleIdx.isnull()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
-    jungleErrorIdx["laneTmp2"] = "jungle"
+# 1) n(정글 템 구매) != 1
+jungleCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
+jungleCount.reset_index(drop=False, inplace=True)
+
+if len(jungleCount.loc[(jungleCount.laneEdit=="JUNGLE")&(jungleCount.jungleIdx==0)]) > 0:
+    Participant.trollGame.where(~Participant.gameId.isin(jungleCount.loc[((jungleCount.laneEdit=="JUNGLE")&(jungleCount.jungleIdx!=1)),"gameId"]), "TYPE", inplace=True)
+    # 1.1) 정글템: 0
+    jungleCount = Participant.loc[Participant.trollGame=="TYPE"].groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
+    jungleCount.reset_index(drop=False, inplace=True)
+    ParticipantTmp = pd.merge(jungleCount.loc[(jungleCount.laneEdit=="JUNGLE")&(jungleCount.jungleIdx==0), ["gameId","teamId"]], Participant, how="left")
+    ParticipantGrp = (ParticipantTmp
+                      .loc[~((ParticipantTmp.spell1Id=="11")|(ParticipantTmp.spell2Id=="11"))]
+                      .groupby(["gameId","teamId","laneEdit"], observed=True, as_index=False)
+                      .size())
+    ParticipantGrp["change"] = True
+    # 1.1.1) 정글템: 0 / 강타: 0
+    if sum(ParticipantGrp["size"]==5) > 0:
+        ParticipantTmp = pd.merge(ParticipantTmp, ParticipantGrp.loc[ParticipantGrp["size"]==5, ["gameId","teamId","change"]], how="left")
+        # 1.1.1-1) 해당하는 게임 Id 확인
+        errorGame = ParticipantTmp.loc[ParticipantTmp.change==True,["gameId","teamId"]].drop_duplicates()
+        # 1.1.1-2) 정글 랜덤 배정
+        randLane = np.array([np.random.choice(["None"]*4+["JUNGLE"], 5, replace=False) for i in range(len(errorGame))]).flatten()
+        ParticipantTmp.loc[ParticipantTmp.change==True, "laneEdit"] = randLane
+        ParticipantTmp.loc[ParticipantTmp.change==True, "trollGame"] = "TYPE01"
+        ParticipantTmp.drop("change", axis=1, inplace=True)
+
+    # 1.1.2) 정글템: 0 / 강타: >= 1
+    if sum((ParticipantTmp.spell1Id=="11")|(ParticipantTmp.spell2Id=="11")) > 0:
+        # 1.1.2-1) 강타 소유자들 정글 lane 배정
+        ParticipantTmp.loc[(ParticipantTmp.spell1Id=="11")|(ParticipantTmp.spell2Id=="11"), "laneEdit"] = "JUNGLE"
+        ParticipantTmp.loc[ParticipantTmp.trollGame!="TYPE01", "trollGame"] = "TYPE02"
+        # 1.1.2-2) 강타 배정이 2명 이상일 경우 정글 미니언 최다 유저한테 배정
+        jungleCount = ParticipantTmp.groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
+        jungleCount.reset_index(drop=False, inplace=True)
+        if len(jungleCount.loc[(jungleCount.laneEdit=="JUNGLE")&(jungleCount.jungleIdx>1)]) > 0 :
+            ParticipantTmp01 = pd.merge(jungleCount.loc[(jungleCount.laneEdit=="JUNGLE")&(jungleCount.jungleIdx>1), ["gameId","teamId"]], ParticipantTmp, how="left")
+            maxJungleIdx = ParticipantTmp01.groupby(["gameId","teamId"]).agg(jungleIdx=("neutralMinionsKilled","idxmax"))
+            maxJungleIdx.reset_index(drop=False, inplace=True)
+            maxJungleIdx = ParticipantTmp01.loc[pd.Index(maxJungleIdx[~maxJungleIdx.jungleIdx.isnull()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
+            maxJungleIdx["laneTmp2"] = "jungle"
+            ParticipantTmp01 = pd.merge(ParticipantTmp01, maxJungleIdx, on=["gameId", "participantId", "teamId"], how="left")
+            ParticipantTmp01.loc[(ParticipantTmp01.laneEdit=="JUNGLE")&(ParticipantTmp01.laneTmp2!="jungle"), "laneTmp2"] = "nonjungle"
+            ParticipantTmp = pd.merge(ParticipantTmp, ParticipantTmp01[["gameId", "participantId", "teamId", "laneTmp2"]], on=["gameId", "participantId", "teamId"], how="left")
+            ParticipantTmp.loc[ParticipantTmp.laneTmp2=="nonjungle", "laneEdit"] = "None"
+            ParticipantTmp.loc[ParticipantTmp.laneTmp2=="jungle", "laneEdit"] = "JUNGLE"
+
+    for c1, c2 in ParticipantTmp.loc[:,["gameId","trollGame"]].drop_duplicates().values:
+        Participant.loc[Participant.gameId==c1, "trollGame"] = c2
+    Participant = pd.merge(Participant, ParticipantTmp.loc[:,["gameId","participantId","laneEdit"]], on=["gameId","participantId"], how="left", suffixes=("","_y"))
+    Participant.loc[~Participant.laneEdit_y.isna(), "laneEdit"] = Participant.loc[~Participant.laneEdit_y.isna(), "laneEdit_y"]
+    Participant.drop("laneEdit_y", axis=1, inplace=True)
     
-    ParticipantTmp = pd.merge(Participant, jungleErrorIdx[["gameId", "teamId"]].astype("string"), on=["gameId", "teamId"], how="inner")
-    ParticipantTmp = pd.merge(ParticipantTmp, jungleErrorIdx, on=["gameId", "participantId", "teamId"], how="left")
+# 1.2) 정글템: >= 2 
+# 1.2-1) 정글 미니언 최대 유저에게 정글 lane 배정
+jungleCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
+jungleCount.reset_index(drop=False, inplace=True)
+
+if len(jungleCount.loc[(jungleCount.laneEdit=="JUNGLE")&(jungleCount.jungleIdx>1)]) > 0:
+    Participant.loc[Participant.gameId.isin(jungleCount.loc[(jungleCount.laneEdit=="JUNGLE")&(jungleCount.jungleIdx!=1), "gameId"]), "trollGame"] = "TYPE03"
+    ParticipantTmp = pd.merge(jungleCount.loc[(jungleCount.laneEdit=="JUNGLE")&(jungleCount.jungleIdx!=1), ["gameId","teamId"]], Participant, how="left")
+    maxJungleIdx = ParticipantTmp.loc[ParticipantTmp.laneEdit=="JUNGLE"].groupby(["gameId","teamId"]).agg(jungleIdx=("neutralMinionsKilled","idxmax"))
+    maxJungleIdx.reset_index(drop=False, inplace=True)
+    maxJungleIdx = ParticipantTmp.loc[pd.Index(maxJungleIdx[~maxJungleIdx.jungleIdx.isnull()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
+    maxJungleIdx["laneTmp2"] = "jungle"
+    ParticipantTmp = pd.merge(Participant, maxJungleIdx[["gameId", "teamId"]].astype("string"), on=["gameId", "teamId"], how="inner")
+    ParticipantTmp = pd.merge(ParticipantTmp, maxJungleIdx, on=["gameId", "participantId", "teamId"], how="left")
     ParticipantTmp.loc[(ParticipantTmp.laneEdit=="JUNGLE")&(ParticipantTmp.laneTmp2!="jungle"), "laneTmp2"] = "nonjungle"
     
     Participant = pd.merge(Participant, ParticipantTmp[["gameId", "participantId", "teamId", "laneTmp2"]], on=["gameId", "participantId", "teamId"], how="left")
     Participant.loc[Participant.laneTmp2=="nonjungle", "laneEdit"] = "None"
     Participant.loc[Participant.laneTmp2=="jungle", "laneEdit"] = "JUNGLE"
-Participant = Participant.drop(["laneTmp", "laneTmp2"], axis=1, errors="ignore")
+    
+Participant.drop(["laneTmp", "laneTmp2"], axis=1, errors="ignore", inplace=True)
 Participant = Participant.astype({"laneEdit":"string"})
 
 ## Support
@@ -143,31 +189,53 @@ participantId["laneTmp"] = "support"
 participantId.drop_duplicates(keep="last", inplace=True)
 Participant = pd.merge(Participant, participantId, on=["gameId", "participantId"], how="left")
 Participant.loc[(Participant.laneEdit!="JUNGLE")&(Participant.laneTmp=="support"), "laneEdit"] = "SUPPORT"
-# 각 game, 각 team 정글러 숫자 확인
+# 각 game, 각 team 서포터 숫자 확인
 Participant = Participant.astype({"laneEdit":"category"})
-supportCount = Participant.loc[Participant.reMatch==False].groupby(by=["gameId","teamId","laneEdit"]).agg(supportIdx=("laneEdit","size"))
-supportCount = supportCount.reset_index(drop=False)
 
-# 팀별 서포터가 1명이 아닌 경우
-if len(supportCount[(supportCount.laneEdit == "SUPPORT")&(supportCount.supportIdx != 1)]) > 0:
-    # 문제가 있는 game & team
-    supportError = supportCount[(supportCount.supportIdx != 1)&(supportCount.laneEdit=="SUPPORT")]
-    supportError = pd.merge(Participant, supportError[["gameId","teamId","supportIdx"]], on=["gameId","teamId"], how="inner")
-    supportError.loc[:, "totalMinionsKilledSum"] = supportError.loc[:, "totalMinionsKilled"] + supportError.loc[:, "neutralMinionsKilled"]
-    # game & 팀내 최소 미니언 처치 participant
-    supportErrorCount = supportError.loc[supportError.laneEdit!="JUNGLE"].groupby(["gameId","teamId"]).agg(supportIdx=("totalMinionsKilledSum","idxmin"))
-    supportErrorIdx = supportErrorCount.reset_index(drop=False)
-    supportErrorIdx = supportError.loc[pd.Index(supportErrorIdx[~supportErrorIdx.supportIdx.isnull()].astype({"supportIdx":"int"}).supportIdx.tolist()), ["gameId","participantId", "teamId"]]
-    supportErrorIdx["laneTmp2"] = "support"
+# Define Troll Game
+# 2) n(서폿 템 구매) != 1
+supportCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(supportIdx=("laneEdit","size"))
+supportCount.reset_index(drop=False, inplace=True)
 
-    ParticipantTmp = pd.merge(Participant, supportErrorIdx[["gameId", "teamId"]], on=["gameId", "teamId"], how="inner")
-    ParticipantTmp = pd.merge(ParticipantTmp, supportErrorIdx, on=["gameId", "participantId", "teamId"], how="left")
+if len(supportCount[(supportCount.laneEdit == "SUPPORT")&(supportCount.supportIdx==0)]) > 0:
+    Participant.trollGame.where(~Participant.gameId.isin(supportCount.loc[((supportCount.laneEdit=="SUPPORT")&(supportCount.supportIdx!=1)),"gameId"]), "TYPE", inplace=True)
+    # 2.1) 서폿템: 0
+    if sum((supportCount.laneEdit=="SUPPORT")&(supportCount.supportIdx==0)) > 0:
+        ParticipantTmp = pd.merge(supportCount.loc[(supportCount.laneEdit=="SUPPORT")&(supportCount.supportIdx==0), ["gameId","teamId"]], Participant, how="left")
+        ParticipantTmp.loc[:, "totalMinionsKilledSum"] = ParticipantTmp.loc[:, "totalMinionsKilled"] + ParticipantTmp.loc[:, "neutralMinionsKilled"]
+        errorGame = ParticipantTmp.loc[:,["gameId","teamId"]].drop_duplicates()
+        randLane = np.array([np.random.choice(["None"]*3+["SUPPORT"], 4, replace=False) for i in range(len(errorGame))]).flatten()
+        ParticipantTmp.loc[ParticipantTmp.laneEdit!="JUNGLE", "laneEdit"] = randLane
+        ParticipantTmp.loc[:,"trollGame"] = "TYPE04"
+        
+    for c1, c2 in ParticipantTmp.loc[:,["gameId","trollGame"]].drop_duplicates().values:
+        Participant.loc[Participant.gameId==c1, "trollGame"] = c2
+    Participant = pd.merge(Participant, ParticipantTmp.loc[:,["gameId","participantId","laneEdit"]], on=["gameId","participantId"], how="left", suffixes=("","_y"))
+    Participant.loc[~Participant.laneEdit_y.isna(), "laneEdit"] = Participant.loc[~Participant.laneEdit_y.isna(), "laneEdit_y"]
+    Participant.drop("laneEdit_y", axis=1, inplace=True)
+
+# 2.2) 서톳템: >= 2
+# 2.2-1) 미니언 최소 유저에게 서폿 유저 배정
+supportCount = Participant.groupby(by=["gameId","teamId","laneEdit"]).agg(supportIdx=("laneEdit","size"))
+supportCount.reset_index(drop=False, inplace=True)
+
+if len(supportCount[(supportCount.laneEdit == "SUPPORT")&(supportCount.supportIdx>1)]) > 0:
+    Participant.loc[Participant.gameId.isin(supportCount.loc[(supportCount.laneEdit=="SUPPORT")&(supportCount.supportIdx!=1), "gameId"]), "trollGame"] = "TYPE05"
+    ParticipantTmp = pd.merge(supportCount.loc[(supportCount.laneEdit=="SUPPORT")&(supportCount.supportIdx!=1), ["gameId","teamId"]], Participant, how="left")
+    ParticipantTmp.loc[:, "totalMinionsKilledSum"] = ParticipantTmp.loc[:, "totalMinionsKilled"] + ParticipantTmp.loc[:, "neutralMinionsKilled"]
+    minSupportIdx = ParticipantTmp.loc[ParticipantTmp.laneEdit=="SUPPORT"].groupby(["gameId","teamId"]).agg(supportIdx=("totalMinionsKilledSum","idxmin"))
+    minSupportIdx.reset_index(drop=False, inplace=True)
+    minSupportIdx = ParticipantTmp.loc[pd.Index(minSupportIdx[~minSupportIdx.supportIdx.isnull()].astype({"supportIdx":"int"}).supportIdx.tolist()), ["gameId","participantId", "teamId"]]
+    minSupportIdx["laneTmp2"] = "support"
+    ParticipantTmp = pd.merge(Participant, minSupportIdx[["gameId", "teamId"]].astype("string"), on=["gameId", "teamId"], how="inner")
+    ParticipantTmp = pd.merge(ParticipantTmp, minSupportIdx, on=["gameId", "participantId", "teamId"], how="left")
     ParticipantTmp.loc[(ParticipantTmp.laneEdit=="SUPPORT")&(ParticipantTmp.laneTmp2!="support"), "laneTmp2"] = "nonsupport"
 
     Participant = pd.merge(Participant, ParticipantTmp[["gameId", "participantId", "teamId", "laneTmp2"]], on=["gameId", "participantId", "teamId"], how="left")
-    Participant.loc[(Participant.laneEdit!="JUNGLE")&(Participant.laneEdit=="SUPPORT")&(Participant.laneTmp2=="nonsupport"), "laneEdit"] = "None"
-    Participant.loc[(Participant.laneTmp!="JUNGLE")&(Participant.laneTmp2=="support"), "laneEdit"] = "SUPPORT"
-Participant = Participant.drop(["laneTmp", "laneTmp2"], axis=1, errors="ignore")
+    Participant.loc[Participant.laneTmp2=="nonsupport", "laneEdit"] = "None"
+    Participant.loc[Participant.laneTmp2=="support", "laneEdit"] = "SUPPORT"
+
+Participant.drop(["laneTmp", "laneTmp2"], axis=1, errors="ignore", inplace=True)
 Participant = Participant.astype({"laneEdit":"string"})
 
 '''
@@ -254,7 +322,7 @@ laneCount = Participant.loc[Participant.reMatch==False].groupby(["gameId","teamI
 laneCount = pd.merge(laneCount, laneCount.loc[laneCount.laneEdit.isin(["TOP","MIDDLE","BOTTOM"])].groupby(["gameId","teamId"], as_index=False).agg(cntSumTMB=("cnt","sum")), on=["gameId","teamId"], how="left")
 
 if len(laneCount[laneCount.cnt!=1]) > 0:
-    print(f"{len(laneCount[laneCount.cnt!=1])} games have wrong laneEdit")
+    print(f"{len(laneCount.loc[laneCount.cnt!=1,'gameId'].unique())} games have wrong laneEdit")
     # lane의 갯수가 문제가 있는 게임
     gameList = laneCount[(laneCount.cnt!=1)|(laneCount.laneEdit=="None")].copy()
     # 포지션 정보 수정
@@ -299,28 +367,16 @@ else:
 # save
 createFolder(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}")
 
-df["summonerList"].reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/summonerList{args.begin.replace('2021','').replace('-','')}.ftr")
-# Match.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/Match{args.begin.replace('2021','').replace('-','')}.ftr")
-# MatchReference.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchReference{args.begin.replace('2021','').replace('-','')}.ftr")
-# TeamStats.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/TeamStats{args.begin.replace('2021','').replace('-','')}.ftr")
-# Participant.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/Participant{args.begin.replace('2021','').replace('-','')}.ftr")
-# ParticipantIdentity.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/ParticipantIdentity{args.begin.replace('2021','').replace('-','')}.ftr")
-# MatchTimeline.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchTimeline{args.begin.replace('2021','').replace('-','')}.ftr")
-# MatchFrame.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchFrame{args.begin.replace('2021','').replace('-','')}.ftr")
-# MatchParticipantFrame.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchParticipantFrame{args.begin.replace('2021','').replace('-','')}.ftr")
-# MatchEvent.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchEvent{args.begin.replace('2021','').replace('-','')}.ftr")
-# positionData.reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/positionData{args.begin.replace('2021','').replace('-','')}.ftr")
-
 df["summonerList"].reset_index(drop=True).astype(ref.formatJson["inputDtype"]["summonerListDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/summonerList{args.begin.replace('2021','').replace('-','')}.ftr")
-Match.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/Match{args.begin.replace('2021','').replace('-','')}.ftr")
-MatchReference.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchReferenceDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchReference{args.begin.replace('2021','').replace('-','')}.ftr")
-TeamStats.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["TeamStatsDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/TeamStats{args.begin.replace('2021','').replace('-','')}.ftr")
+pd.merge(Participant[["gameId","trollGame"]].drop_duplicates(), Match, how="right").reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/Match{args.begin.replace('2021','').replace('-','')}.ftr")
+pd.merge(Participant[["gameId","trollGame"]].drop_duplicates(), MatchReference, how="right").reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchReferenceDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchReference{args.begin.replace('2021','').replace('-','')}.ftr")
+pd.merge(Participant[["gameId","trollGame"]].drop_duplicates(), TeamStats, how="right").reset_index(drop=True).astype(ref.formatJson["inputDtype"]["TeamStatsDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/TeamStats{args.begin.replace('2021','').replace('-','')}.ftr")
 Participant.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["ParticipantDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/Participant{args.begin.replace('2021','').replace('-','')}.ftr")
-ParticipantIdentity.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["ParticipantIdentityDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/ParticipantIdentity{args.begin.replace('2021','').replace('-','')}.ftr")
-MatchTimeline.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchTimelineDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchTimeline{args.begin.replace('2021','').replace('-','')}.ftr")
-MatchFrame.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchFrameDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchFrame{args.begin.replace('2021','').replace('-','')}.ftr")
-MatchParticipantFrame.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchParticipantFrameDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchParticipantFrame{args.begin.replace('2021','').replace('-','')}.ftr")
-MatchEvent.reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchEventDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchEvent{args.begin.replace('2021','').replace('-','')}.ftr")
+pd.merge(Participant[["gameId","trollGame"]].drop_duplicates(), ParticipantIdentity, how="right").reset_index(drop=True).astype(ref.formatJson["inputDtype"]["ParticipantIdentityDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/ParticipantIdentity{args.begin.replace('2021','').replace('-','')}.ftr")
+pd.merge(Participant[["gameId","trollGame"]].drop_duplicates(), MatchTimeline, how="right").reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchTimelineDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchTimeline{args.begin.replace('2021','').replace('-','')}.ftr")
+pd.merge(Participant[["gameId","trollGame"]].drop_duplicates(), MatchFrame, how="right").reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchFrameDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchFrame{args.begin.replace('2021','').replace('-','')}.ftr")
+pd.merge(Participant[["gameId","trollGame"]].drop_duplicates(), MatchParticipantFrame, how="right").reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchParticipantFrameDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchParticipantFrame{args.begin.replace('2021','').replace('-','')}.ftr")
+pd.merge(Participant[["gameId","trollGame"]].drop_duplicates(), MatchEvent, how="right").reset_index(drop=True).astype(ref.formatJson["inputDtype"]["MatchEventDtype"]).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/MatchEvent{args.begin.replace('2021','').replace('-','')}.ftr")
 posDict["period5"].reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/period05_{args.begin.replace('2021','').replace('-','')}.ftr")
 posDict["period10"].reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/period10_{args.begin.replace('2021','').replace('-','')}.ftr")
 posDict["period15"].reset_index(drop=True).to_feather(f"/data1/lolData/cgLeague/API_ftr/{args.begin.replace('2021','').replace('-','')}/period15_{args.begin.replace('2021','').replace('-','')}.ftr")
