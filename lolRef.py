@@ -4,7 +4,7 @@ import requests, json, urllib
 import matplotlib.pyplot as plt
 import PIL
 
-class lolRef:
+class Ref:
     def __init__(self):
         # version data 확인
         verRequest = requests.get("https://ddragon.leagueoflegends.com/api/versions.json")
@@ -19,7 +19,7 @@ class lolRef:
         self.itemInfoDto = pd.DataFrame(itemRequest.json()["data"]).T
         self.itemInfoDto.reset_index(drop=False, inplace=True)
         self.itemInfoDto.rename(columns={"index":"itemId"}, inplace=True)
-        self.itemInfoDto = self.itemInfoDto.astype({"itemId":"string", "name":"string", "description":"string", "colloq":"string", "plaintext":"string", "into":"string", "image":"string", "gold":"string", "tags":"string", "maps":"string", "stats":"string", "from":"string", "depth":"string", "effect":"string", "stacks":"string", "consumed":"string", "inStore":"string", "hideFromAll":"string", "consumeOnFull":"string", "specialRecipe":"string", "requiredChampion":"string", "requiredAlly":"string"})
+        self.itemInfoDto = self.itemInfoDto.astype(str)
         # Spell Info DataFrame
         spellRequest = requests.get(f"http://ddragon.leagueoflegends.com/cdn/{self.current_version}/data/ko_KR/summoner.json")
         spellInfo = pd.DataFrame(spellRequest.json())
