@@ -1,6 +1,6 @@
 import argparse, os
 import time, datetime
-import lolApi, dataPull
+import lolApi, lolDataPull
 import pandas as pd
 def createFolder(directory):
     try:
@@ -30,7 +30,7 @@ apikey = lolApi.loadKey("/home/lj/git/MiniProject_LOL/APIData/product_keys.txt")
 # pulling challenger, grandmaster league summoner list
 dataPath = "/data1/lolData/cgLeague/API_csv"
 summonerList = pd.read_csv(f"{dataPath}/{args.begin[2:]}/summonerList_{args.begin[2:]}.csv")
-output = dataPull.matchPull(apikey, args.begin, args.end, summonerList)
+output = lolDataPull.matchPull(apikey, args.begin, args.end, summonerList)
 # save data
 for key in output.keys():
     output[key].to_csv(f"{dataPath}/{args.begin[2:]}/{key}_{args.begin[2:]}.csv", index=False)

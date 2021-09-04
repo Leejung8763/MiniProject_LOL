@@ -1,6 +1,6 @@
 import argparse
 import time, datetime
-import lolApi, dataPull
+import lolApi, lolDataPull
 import os, requests
 
 # 인자값을 받을 수 있느 인스턴스 생성
@@ -23,9 +23,9 @@ startTime = time.time()
 apikey = lolApi.loadKey("/home/lj/git/MiniProject_LOL/APIData/product_keys.txt")
 # create folder
 savePath = "/data1/lolData/cgLeague/API_csv"
-dataPull.createFolder(f"{savePath}/{args.begin[2:]}")
+lolDataPull.createFolder(f"{savePath}/{args.begin[2:]}")
 # pulling challenger, grandmaster league summoner list
-summonerList = dataPull.summonerPull(apikey)
+summonerList = lolDataPull.summonerPull(apikey)
 # save summoner list data
 summonerList.to_csv(f"{savePath}/{args.begin[2:]}/summonerList_{args.begin[2:]}.csv", index=False, encoding='utf-8-sig')
 print(f"Start: {datetime.datetime.fromtimestamp(startTime)}, End: {datetime.datetime.fromtimestamp(time.time())}, Total: {time.time()-startTime}")

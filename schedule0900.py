@@ -1,6 +1,6 @@
 import argparse, os
 import time, datetime
-import lolApi, lolRef, dataPull
+import lolApi, lolRef, lolDataPull, lolOutput
 import pandas as pd
 def createFolder(directory):
     try:
@@ -30,8 +30,8 @@ ref = lolRef.Ref()
 # create folder
 dataPath = "/data1/lolData/cgLeague/API_csv"
 savePath = "/data1/lolData/cgLeague/API_ftr"
-dataPull.createFolder(f"{savePath}/{args.begin[2:]}")
-output = dataPull.preprocess(args.begin, args.end, f"{dataPath}/{args.begin[2:]}")
+lolDataPull.createFolder(f"{savePath}/{args.begin[2:]}")
+output = lolDataPull.preprocess(args.begin, args.end, f"{dataPath}/{args.begin[2:]}")
 # save data
 for key in output.keys():
     if "period" not in key:
