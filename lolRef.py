@@ -51,7 +51,7 @@ class Ref:
                 self.runeInfoDto = pd.concat([self.runeInfoDto, runeInfoDto2]) 
                 self.runeInfoDto = self.runeInfoDto.astype({"id":"string", "key":"string", "icon":"string", "name":"string", "longDesc":"string", "shortDesc":"string"})
                 # format Json 파일
-                with open("/home/lj/git/MiniProject_LOL/RefData/formatJsonV3.json", "r") as loadfile:
+                with open("/data1/lolData/RefData/formatJson.json", "r") as loadfile:
                     self.formatJson = json.load(loadfile)
                 break
             except:
