@@ -25,7 +25,6 @@ def get_img_with_href(local_img_path, target_url):
     </a>"""
     return html_code
 
-# @st.cache(allow_output_mutation=True,suppress_st_warning=True)
 def page():
     ############
     # fix list #
