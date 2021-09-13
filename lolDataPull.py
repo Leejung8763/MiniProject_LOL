@@ -114,7 +114,7 @@ def preprocess(begin:str, end:str, dataPath:dict):
     data["MatchParticipantFrame"] = data["MatchParticipantFrame"].loc[~data["MatchParticipantFrame"].index.isin(error)].reset_index(drop=True)
     data["MatchEvent"] = pd.merge(data["Match"][["gameId","queueId"]], data["MatchEvent"], how="right")
     # Id에 .0 표시되어 있는 것 삭제
-    idlist = [x for x in data["MatchEvent"].columns if "Id" in x]
+    idlist = [x for x in data["MatchEvent"].columns if "Id" in x] + ["skillSlot"]
     for col in idlist:
         data["MatchEvent"][col] = data["MatchEvent"][col].str.replace(".0","",regex=False).astype("category")
         # 다시하기 체크
