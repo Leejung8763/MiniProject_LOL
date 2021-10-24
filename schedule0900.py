@@ -27,11 +27,17 @@ if (args.begin != yesterday) & (args.end == today):
 startTime = time.time()
 # reference data
 ref = lolRef.Ref()
-# create folder
+
+##############
+# PreProcess # 
+##############
+# set directory
 dataPath = "/data1/lolData/cgLeague/API_csv"
 savePath = "/data1/lolData/cgLeague/API_ftr"
+# create folder
 lolDataPull.createFolder(f"{savePath}/{args.begin[2:]}")
 output = lolDataPull.preprocess(args.begin, args.end, f"{dataPath}/{args.begin[2:]}")
+print("done")
 # save data
 for key in output.keys():
     if "period" not in key:
@@ -39,3 +45,24 @@ for key in output.keys():
     else:
         output[key].to_feather(f"{savePath}/{args.begin[2:]}/{key}_{args.begin[2:]}.ftr")
 print(f"Start: {datetime.datetime.fromtimestamp(startTime)}, End: {datetime.datetime.fromtimestamp(time.time())}, Total: {time.time()-startTime}")
+
+##########
+# Ouptut #
+##########
+# set directory
+dataPath = "/data1/lolData/cgLeague/API_ftr"
+savePath = "/data1/lolData/cgLeague/Output"
+# create folder
+lolDataPull.createFolder(f"{savePath}/{args.begin[2:]}")
+apikey = lolApi.loadKey("/home/lj/git/MiniProject_LOL/APIData/product_keys.txt")
+outputCls = lolOutput.summaryCls(apikey, ref)
+outputCls.dataLoad(args.begin,30)
+outputCls.gameSummary()
+outputCls.matchSummary()
+outputCls.prdSummary()
+outputCls.runeSummary()
+outputCls.skillSummary()
+outputCls.spellSummary()
+# save data
+for file in outputCls.output.keys():
+    outputCls.output[file].astype(ref.formatJson["outputDtype"][f"{file}Dtype"])     .to_feather(f"/data1/lolData/cgLeague/Output/{args.begin[2:]}/{file}.ftr")
