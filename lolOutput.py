@@ -2,10 +2,11 @@ import requests, json, argparse, datetime, time, os
 import pandas as pd
 import numpy as np
 
-class lolOutput:
-    def __init__(self):
-        output = dict()
-        df = {"MatchParticipantFrame" : pd.DataFrame()
+class summaryCls:
+    def __init__(self, apikey, ref):
+        self.apikey = apikey
+        self.output = dict()
+        self.data = {"MatchParticipantFrame" : pd.DataFrame()
                   ,"MatchFrame" : pd.DataFrame()
                   ,"summonerList" : pd.DataFrame()
                   ,"MatchTimeline" : pd.DataFrame()
@@ -15,106 +16,134 @@ class lolOutput:
                   ,"MatchReference" : pd.DataFrame()
                   ,"TeamStats" : pd.DataFrame()
                   ,"ParticipantIdentity" : pd.DataFrame()
-                  ,"period05_" : pd.DataFrame()
-                  ,"period10_" : pd.DataFrame()
-                  ,"period15_" : pd.DataFrame()}
+                  ,"period05" : pd.DataFrame()
+                  ,"period10" : pd.DataFrame()
+                  ,"period15" : pd.DataFrame()}
+        self.idxTable = pd.DataFrame({"laneEdit":["TOP","JUNGLE","MIDDLE","BOTTON","SUPPORT"]*len(ref.champInfoDto.key),
+                                      "championId":np.repeat(ref.champInfoDto.key.tolist(),5)})
     
-    def dataLoad(self, startDt, endDt, dataPath="/data1/lolData/cgLeague/API_ftr"):
-        dateLs = pd.Series(pd.date_range(startDt, endDt)).dt.strftime('%m%d').tolist()
+    def dataLoad(self, endDt, timeLength, dataPath="/data1/lolData/cgLeague/API_ftr"):
+        startDt = (datetime.datetime.strptime(endDt, "%Y%m%d") - datetime.timedelta(days=timeLength)).strftime('%Y%m%d')
+        dateLs = pd.Series(pd.date_range(startDt, endDt)).dt.strftime('%y%m%d').tolist()
         for dataFolder in dateLs:
-            for file in os.listdir(os.path.join(dataPath ,dataFolder)):
-                dataTmp = pd.read_feather(f"{os.path.join(dataPath, dataFolder)}/{file}")
-                if all(fname not in file for fname in ["summoner","period"]):
-                    dataTmp = dataTmp.loc[(dataTmp.reMatch==False)&(dataTmp.trollGame=="NORM")]
-                df[file[:(len(file)-8)]] = pd.concat([df[file[:(len(file)-8)]], dataTmp], axis=0, ignore_index=True)
-
-                # 경기 기록
+            if os.path.exists(os.path.join(dataPath ,dataFolder)):
+                for file in ["Participant","MatchEvent","Match","TeamStats"]:
+                    dataTmp00 = pd.read_feather(f"{os.path.join(dataPath, dataFolder)}/{file}_{dataFolder}.ftr")
+                    dataTmp00 = dataTmp00.loc[(dataTmp00.reMatch==False)&(dataTmp00.trollGame=="NORM")&(dataTmp00.queueId.isin(["420","440"]))]
+                    if file == "Participant":
+                        dataTmp01 = pd.read_feather(f"{os.path.join(dataPath, dataFolder)}/ParticipantIdentity_{dataFolder}.ftr")
+                        dataTmp02 = pd.read_feather(f"{os.path.join(dataPath, dataFolder)}/summonerList_{dataFolder}.ftr")
+                        dataTmp01 = pd.merge(dataTmp01.loc[:,["gameId","participantId","accountId","summonerId"]], dataTmp02.loc[:,["summonerId","accountId","tier"]], how="left")
+                        dataTmp00 = pd.merge(dataTmp01, dataTmp00, how="right")
+                        del dataTmp01, dataTmp02
+                    self.data[file] = pd.concat([self.data[file], dataTmp00], axis=0, ignore_index=True)
+                    del dataTmp00                    
+            else:
+                continue
+                
+    # 경기 기록
     def gameSummary(self):
-        Participant = pd.merge(df["ParticipantIdentity"].loc[:,["gameId","participantId","accountId"]], df["Participant"], how="left")
-        standardDict = {"std1":["laneEdit","championId"]
-                ,"std2":["championId"]
-                ,"std3":["laneEdit"]}
-        for statName in ["champStats", "champStatsInd"]:
+        standardDict = {"champStats":{"std1":["laneEdit","championId"] ,"std2":["championId"] ,"std3":["laneEdit"]},
+                        "userStatsTot":{"std1":["accountId","summonerId","championId"] ,"std2":["accountId","summonerId","championId"] ,"std3":["accountId","summonerId"]},
+                        "userStatsLane":{"std1":["accountId","summonerId","laneEdit","championId"] ,"std2":["accountId","summonerId","championId"] ,"std3":["accountId","summonerId","laneEdit"]},
+                        "tierStats":{"std1":["tier","laneEdit","championId"] ,"std2":["tier","championId"] ,"std3":["tier","laneEdit"]}}
+        for statName in ["champStats", "userStatsTot", "userStatsLane", "tierStats"]:
             # Mean by Champ
-            laneStat = (Participant
-                        .groupby(standardDict["std1"], as_index=False, observed=True)
+            laneStat = (self.data["Participant"]
+                        .groupby(standardDict[statName]["std1"], as_index=False, observed=True)
                         .mean())
             # Count by Champ
-            champCount = (Participant
-                          .groupby(standardDict["std1"], as_index=False, observed=True)
-                          .agg(champCnt=("championId","size"))
-                          .sort_values(standardDict["std1"], ascending=False, ignore_index=True))
+            champCount = (self.data["Participant"]
+                          .groupby(standardDict[statName]["std1"], as_index=False, observed=True)
+                          .agg(champCnt=("championId","size")))
             ## Lane Frequency by Champ
-            champCount["champCntTot"] = champCount.groupby(standardDict["std2"], observed=True).champCnt.transform("sum")
+            champCount["champCntTot"] = champCount.groupby(standardDict[statName]["std2"], observed=True).champCnt.transform("sum")
+            ## Lane Proportion by Champ
             champCount["champPropTot"] = champCount["champCnt"] / champCount["champCntTot"]
             ## Lane Frequency by Lane
-            champCount["laneCntTot"] = champCount.groupby(standardDict["std3"], observed=True).champCnt.transform("size")
+            champCount["laneCntTot"] = champCount.groupby(standardDict[statName]["std3"], observed=True).champCnt.transform("sum")
+            ## Lane Proportion by Lane
             champCount["lanePropTot"] = champCount["champCnt"] / champCount["laneCntTot"]
             # Ban 
-            banCount = df["TeamStats"].loc[:,["bans_1","bans_2","bans_3","bans_4","bans_5"]].stack()
+            banCount = self.data["TeamStats"].loc[:,["bans_1","bans_2","bans_3","bans_4","bans_5"]].stack()
             banCount = pd.DataFrame(data=banCount, columns=["championId"]).reset_index(drop=True)
-            banCount["championId"] = banCount.championId.str.replace(".0","", regex=False) # 포멧 수정하면 코드 삭제
+        #     banCount["championId"] = banCount.championId.str.replace(".0","", regex=False) # 포멧 수정하면 코드 삭제
             banCount = banCount.groupby("championId", as_index=False, observed=True).agg(banCnt=("championId","size"))
             banCount["banCntTot"] = banCount.loc[banCount.championId!="-1", "banCnt"].sum()
             banCount["banPropTot"] = banCount["banCnt"] / banCount["banCntTot"]
             # 챔피언 통계 total
             champStats = pd.merge(champCount, banCount, how="left")
-            output[statName] = pd.merge(champStats, laneStat, how="left")
-
-            for key in standardDict.keys():
-                standardDict[key] = ["accountId"] + standardDict[key]
+            champStats = pd.merge(champStats, laneStat, how="left")
+            self.output[statName] = pd.merge(self.idxTable, champStats, how="left")
     
     # 스킬 승률
     def skillSummary(self):
-        skillDf = df["MatchEvent"].loc[~df["MatchEvent"].skillSlot.isnull(), ["gameId", "type", "timestamp", "participantId", "skillSlot", "levelUpType"]].copy()
-        skillDf = pd.merge(df["Participant"].loc[:,["gameId", "participantId", "championId", "win"]], skillDf, how="inner")
-        skillDf["rowNum"] = skillDf.groupby(["gameId","championId"]).cumcount()
-        skillDfSelection = (pd.DataFrame(skillDf.skillSlot)
-                            .set_index(pd.MultiIndex.from_frame(skillDf[["gameId","championId", "rowNum"]]))
-                            .astype({"skillSlot":str}))
-        skillDfSelection["skillSlot"] = skillDfSelection["skillSlot"].str.replace(".0","", regex=False)
-        skillDfSelection = skillDfSelection.unstack(level=-1)
-        skillDfSelection.columns = [i for i in range(21)]
-        skillDf = pd.merge(skillDf.loc[:, ["gameId", "championId", "win"]].drop_duplicates(), skillDfSelection.reset_index(drop=False), how="left")
-        skillDf.loc[:,skillDf.select_dtypes(object).columns] = skillDf.select_dtypes(object).fillna("None")
-        output["skillStats"] = (skillDf
-                                    .groupby(["championId", 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], as_index=False, observed=True)
-                                    .agg(spellCnt=("win","size"), win=("win","mean"))
-                                    .sort_values(["championId","spellCnt"], ascending=False, ignore_index=True))
+        skillData = self.data["MatchEvent"].loc[~self.data["MatchEvent"].skillSlot.isnull(), ["gameId", "type", "timestamp", "participantId", "skillSlot", "levelUpType"]].copy()
+        skillData = pd.merge(self.data["Participant"].loc[:,["gameId", "laneEdit", "participantId", "championId", "win"]], skillData, how="inner")
+        # Skill Learn Order
+        skillData["rowNum"] = skillData.groupby(["gameId","laneEdit","championId"]).cumcount()
+        skillDataSelection = (
+            pd.DataFrame(skillData.skillSlot)
+            .set_index(pd.MultiIndex.from_frame(skillData[["gameId","laneEdit","championId","rowNum"]]))
+        )
+        skillDataSelection = skillDataSelection.unstack(level=-1)
+        skillDataSelection.columns = [f"num{i}" for i in range(len(skillDataSelection.columns))]
+        skillDataSelection = skillDataSelection.query("num14.notna()").reset_index(drop=False)
+        skillData = pd.merge(skillData.loc[:, ["gameId", "laneEdit", "championId", "win"]].drop_duplicates(), skillDataSelection, how="left")
+        # Cut Less than 15th
+        skillData = skillData.query("num14.notna()")
+        # Mean by Skill-Tree
+        skillStats = (skillData
+                      .groupby(["laneEdit","championId"]+[f"num{i}" for i in range(15)], as_index=False, observed=True)
+                      .agg(win=("win","mean"), skillCnt=("win","size")))
+        ## Skill-Tree Frequency by Champ, Lane
+        skillStats["skillCntTot"] = skillStats.groupby(["laneEdit","championId"], observed=True).skillCnt.transform("sum")
+        ## Skill-Tree Proportion by Champ, Lane
+        skillStats["skillPropTot"] = skillStats["skillCnt"] / skillStats["skillCntTot"]
+        self.output["skillStats"] = pd.merge(self.idxTable, skillStats, how="left")
         
     # 스펠 승률
     def spellSummary(self):
-        spellStat = df["Participant"].loc[df["Participant"]["reMatch"]==False, ["laneEdit","championId","spell1Id", "spell2Id", "win"]].copy()
-        spellStat.loc[:,["spell1Id", "spell2Id"]] = np.sort(spellStat.loc[:,["spell1Id", "spell2Id"]].astype(int), axis=1)
-        spellStat.loc[:,["spell1Id", "spell2Id"]] = spellStat.loc[:,["spell1Id", "spell2Id"]].astype("category")
-        spellStat["spellCnt"] = spellStat.groupby(["laneEdit","championId","spell1Id", "spell2Id"], observed=True).win.transform("size")
-        output["spellStat"] = (spellStat
-                                    .groupby(["laneEdit","championId","spell1Id", "spell2Id"], as_index=False, observed=True)
-                                    .mean()
-                                    .sort_values(["laneEdit","championId","spellCnt"], ascending=False, ignore_index=True))
+        spellData = self.data["Participant"].loc[self.data["Participant"]["reMatch"]==False, ["laneEdit","championId","spell1Id", "spell2Id", "win"]].copy()
+        # Re-arange spell order regardless D,F
+        spellData.loc[:,["spell1Id", "spell2Id"]] = np.sort(spellData.loc[:,["spell1Id", "spell2Id"]].astype(int), axis=1)
+        spellData.loc[:,["spell1Id", "spell2Id"]] = spellData.loc[:,["spell1Id", "spell2Id"]].astype("category")
+        # Mean by Spell-Combination
+        spellStats = (spellData
+                      .groupby(["laneEdit","championId","spell1Id", "spell2Id"], as_index=False, observed=True)
+                      .agg(win=("win","mean"), spellCnt=("win","size")))
+        ## Spell-Combination Frequency by Champ, Lane
+        spellStats["spellCntTot"] = spellStats.groupby(["laneEdit","championId"], observed=True).spellCnt.transform("sum")
+        ## Spell-Combination Proportion by Champ, Lane
+        spellStats["spellPropTot"] = spellStats["spellCnt"] / spellStats["spellCntTot"]
+        self.output["spellStats"] = pd.merge(self.idxTable, spellStats, how="left")
     
     # 룬 승률
     def runeSummary(self):
-        perkLs = [i for i in df["Participant"].columns if ("perk" in i)&("Var" not in i)]
-        runeStat = df["Participant"].loc[df["Participant"]["reMatch"]==False, ["laneEdit","championId","win"]+perkLs].copy()
-        runeStat.loc[:,perkLs] = runeStat.loc[:,perkLs].astype("category")
-        runeStat["runeCnt"] = runeStat.groupby(["laneEdit","championId"]+perkLs, observed=True).win.transform("size")
-        runeStat = (runeStat
-                          .groupby(["laneEdit","championId"]+perkLs, as_index=False, observed=True)
-                          .mean()
-                          .sort_values(["laneEdit","championId","runeCnt"], ascending=False, ignore_index=True))
+        perkLs = [i for i in self.data["Participant"].columns if ("perk" in i)&("Var" not in i)]
+        runeData = self.data["Participant"].loc[self.data["Participant"]["reMatch"]==False, ["laneEdit","championId","win"]+perkLs].copy()
+        runeData.loc[:,perkLs] = runeData.loc[:,perkLs].astype("category")
+        # Mean by Rune-Combination
+        runeStats = (runeData
+                     .groupby(["laneEdit","championId"]+perkLs, as_index=False, observed=True)
+                     .agg(win=("win","mean"), runeCnt=("win","size")))
+        # Rune-Combination Frequency by Champ, Lane
+        runeStats["runeCntTot"] = runeStats.groupby(["laneEdit","championId"], observed=True).runeCnt.transform("sum")
+        ## Rune-Combination Proportion by Champ, Lane
+        runeStats["runePropTot"] = runeStats["runeCnt"] / runeStats["runeCntTot"]
+        self.output["runeStats"] = pd.merge(self.idxTable, runeStats, how="left")
     
     # 매치업 승률
     def matchSummary(self):
-        Participant = df["Participant"].loc[df["Participant"].reMatch==False].copy()
-        vsDto = pd.merge(Participant, Participant, on=["gameId","reMatch","trollGame","laneEdit"], how="left", suffixes=["","Opp"])
-        vsDto = vsDto.loc[vsDto.championId!=vsDto.championIdOpp].reset_index(drop=True)
-        vsDto["vsCnt"] = vsDto.groupby(["championId","championIdOpp"], observed=True).championId.transform("size")
-        vsStat = vsDto.groupby(["championId","championIdOpp"], as_index=False, observed=True).mean()
+        Participant = self.data["Participant"].loc[self.data["Participant"].reMatch==False].copy()
+        vsData = pd.merge(Participant, Participant, on=["gameId","reMatch","trollGame","laneEdit"], how="left", suffixes=["","Opp"])
+        vsData = vsData.loc[vsData.championId!=vsData.championIdOpp].reset_index(drop=True)
+        vsData.insert(3,"vsCnt",vsData.groupby(["laneEdit","championId","championIdOpp"], observed=True).championId.transform("size"))
+        self.output["vsStats"] = vsData.groupby(["laneEdit","championId","championIdOpp"], as_index=False, observed=True).mean()
 
     # 시간대별 경기 기록
     def prdSummary(self):
-        gamePrd = df["Match"].loc[df["Match"].reMatch==False, ["gameId","gameDuration"]]
+        gamePrd = self.data["Match"].loc[self.data["Match"].reMatch==False, ["gameId","gameDuration"]]
         gamePrd["timeClass"] = np.where(
             gamePrd["gameDuration"] > 45*60, "45-99",
             np.where(gamePrd["gameDuration"] > 40*60, "40-45",
@@ -124,9 +153,9 @@ class lolOutput:
                       np.where(gamePrd["gameDuration"] > 20*60, "20-25",
                         np.where(gamePrd["gameDuration"] > 15*60, "15-20",
                           np.where(gamePrd["gameDuration"] > 10*60, "10-15", "None"))))))))
-        gamePrd = pd.merge(gamePrd, df["Participant"], how="left")
+        gamePrd = pd.merge(gamePrd, self.data["Participant"], how="left")
         gamePrd.insert(3,"periodCnt",gamePrd.groupby(["laneEdit","championId","timeClass"], observed=True).championId.transform("size"))
-        prdStat = (gamePrd
+        self.output["prdStats"] = (gamePrd
                    .groupby(["laneEdit","championId","timeClass"], as_index=False, observed=True)
                    .mean()
                    .sort_values(["championId","laneEdit","periodCnt"], ascending=False, ignore_index=True))
