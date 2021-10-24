@@ -114,10 +114,11 @@ def preprocess(begin:str, end:str, dataPath:dict):
     data["MatchParticipantFrame"] = data["MatchParticipantFrame"].loc[~data["MatchParticipantFrame"].index.isin(error)].reset_index(drop=True)
     data["MatchEvent"] = pd.merge(data["Match"][["gameId","queueId"]], data["MatchEvent"], how="right")
     # Id에 .0 표시되어 있는 것 삭제
-    idlist = [x for x in data["MatchEvent"].columns if "Id" in x] + ["skillSlot"]
-    for col in idlist:
-        data["MatchEvent"][col] = data["MatchEvent"][col].str.replace(".0","",regex=False).astype("category")
-        # 다시하기 체크
+    for file in data.keys():
+        idList = [x for x in data[file].columns if re.compile("(?<!game)Id|skillSlot|bans_").search(x)]
+        for col in idList:
+            data[file][col] = data[file][col].str.replace(".0","",regex=False).astype("category")
+    # 다시하기 체크
     durationGameId = set(data["Match"].query('gameDuration < 60*5').gameId)
     turretGameId = set(data["TeamStats"].query('towerKills<5').gameId)
     reGameId = durationGameId&turretGameId
@@ -146,33 +147,75 @@ def preprocess(begin:str, end:str, dataPath:dict):
     2.1) 서폿 템 x 1명 이상
     2.2) 서폿 템 o 2명 이상
     """
-    ## Jungle
+
+    ##########
+    # Jungle #
+    ##########
     # 정글 아이템 ID
     jungleItemId = ref.itemInfoDto.loc[ref.itemInfoDto.name.str.contains("잉걸불 칼|빗발칼날"), "itemId"].astype("category")
     # 정글 아이템 구매 Participant
-    participantId = data["MatchEvent"].query("reMatch==False and queueId.str.contains('420|440') and type=='ITEM_PURCHASED' and itemId==@jungleItemId.tolist()")[["gameId", "participantId"]]  # jungle item 구매한 participant Id
+    participantId = (
+        data["MatchEvent"]
+        .query("""
+        reMatch==False\
+        and queueId.str.contains("420|440")\
+        and type=="ITEM_PURCHASED"\
+        and itemId==@jungleItemId.tolist()\
+        """)
+        .loc[:,["gameId", "participantId"]]
+    )
     participantId["laneTmp"] = "jungle"
     participantId.drop_duplicates(keep="last", inplace=True)
-    data["Participant"] = pd.merge(data["Participant"], participantId, on=["gameId", "participantId"], how="left")
-    data["Participant"].loc[(data["Participant"].reMatch==False)&((data["Participant"].spell1Id=="11")|(data["Participant"].spell2Id=="11"))&(data["Participant"].laneTmp=="jungle"), "laneEdit"] = "JUNGLE"
+    data["Participant"] = pd.merge(data["Participant"], 
+                                   participantId, 
+                                   how="left")
+    data["Participant"].loc[(data["Participant"].reMatch==False)
+                            &((data["Participant"].spell1Id=="11")|(data["Participant"].spell2Id=="11"))
+                            &(data["Participant"].laneTmp=="jungle"), "laneEdit"] = "JUNGLE"
     data["Participant"] = data["Participant"].astype({"laneEdit":"category"})
-    # Define Troll Game
+
+    #####################
+    # Define Troll Game #
+    #####################
+    # n(정글 템 구매) 확인
+    jungleCount = (
+        data["Participant"]
+        .query("""
+        reMatch==False\
+        and queueId.str.contains("420|440")
+        """)
+        .groupby(by=["gameId","teamId","laneEdit"])
+        .agg(jungleIdx=("laneEdit","size"))
+    ).reset_index(drop=False)
+
     # 1) n(정글 템 구매) != 1
-    jungleCount = data["Participant"].query("queueId.str.contains('420|440')").groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
-    jungleCount.reset_index(drop=False, inplace=True)
     if len(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx==0")) > 0:
-        data["Participant"]["trollGame"].where(~data["Participant"].gameId.isin(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx!=1")["gameId"]), "TYPE", inplace=True)
+        (
+            data["Participant"]["trollGame"]
+            .where(~data["Participant"].gameId.isin(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx!=1")["gameId"]), "TYPE", inplace=True)
+        )
         # 1.1) 정글템: 0
-        jungleCount = data["Participant"].query("trollGame=='TYPE'").groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
-        jungleCount.reset_index(drop=False, inplace=True)
-        ParticipantTmp = pd.merge(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx==0")[["gameId","teamId"]], data["Participant"], how="left")
+        jungleCount = (
+            data["Participant"]
+            .query("""
+            reMatch==False\
+            and trollGame=="TYPE"\
+            and queueId.str.contains("420|440")\
+            """)
+            .groupby(by=["gameId","teamId","laneEdit"])
+            .agg(jungleIdx=("laneEdit","size"))
+        ).reset_index(drop=False)
+        ParticipantTmp = pd.merge(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx==0").loc[:,["gameId","teamId"]], 
+                                  data["Participant"].query("queueId.str.contains('420|440')"), 
+                                  how="left")
         ParticipantGrp = (ParticipantTmp
-                          .query("~(spell1Id=='11' or spell2Id=='11')")
+                          .query("""~(spell1Id=="11" or spell2Id=="11")""")
                           .groupby(["gameId","teamId","laneEdit"], observed=True, as_index=False)
                           .agg(cnt=("laneEdit","size")))
         ParticipantGrp["change"] = True
+
         # 1.1.1) 정글템: 0 / 강타: 0
-        if len(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx==0")) > 0:
+        if len(jungleCount.query("""laneEdit=="JUNGLE" and jungleIdx==0""")) > 0:
             ParticipantTmp = pd.merge(ParticipantTmp, ParticipantGrp.query("cnt==5")[["gameId","teamId","change"]], how="left")
             # 1.1.1-1) 해당하는 게임 Id 확인
             errorGame = ParticipantTmp.query("change==True")[["gameId","teamId"]].drop_duplicates()
@@ -181,6 +224,7 @@ def preprocess(begin:str, end:str, dataPath:dict):
             ParticipantTmp.loc[ParticipantTmp.change==True, "laneEdit"] = randLane
             ParticipantTmp.loc[ParticipantTmp.change==True, "trollGame"] = "TYPE01"
             ParticipantTmp.drop("change", axis=1, inplace=True)
+
         # 1.1.2) 정글템: 0 / 강타: >= 1
         if len(ParticipantTmp.query("spell1Id=='11' or spell2Id=='11'")) > 0:
             # 1.1.2-1) 강타 소유자들 정글 lane 배정
@@ -193,7 +237,7 @@ def preprocess(begin:str, end:str, dataPath:dict):
                 ParticipantTmp01 = pd.merge(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx>1")[["gameId","teamId"]], ParticipantTmp, how="left")
                 maxJungleIdx = ParticipantTmp01.groupby(["gameId","teamId"]).agg(jungleIdx=("neutralMinionsKilled","idxmax"))
                 maxJungleIdx.reset_index(drop=False, inplace=True)
-                maxJungleIdx = ParticipantTmp01.loc[pd.Index(maxJungleIdx[~maxJungleIdx.jungleIdx.isnull()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
+                maxJungleIdx = ParticipantTmp01.loc[pd.Index(maxJungleIdx[maxJungleIdx.jungleIdx.notna()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
                 maxJungleIdx["laneTmp2"] = "jungle"
                 ParticipantTmp01 = pd.merge(ParticipantTmp01, maxJungleIdx, on=["gameId", "participantId", "teamId"], how="left")
                 ParticipantTmp01.loc[(ParticipantTmp01.laneEdit=="JUNGLE")&(ParticipantTmp01.laneTmp2!="jungle"), "laneTmp2"] = "nonjungle"
@@ -204,19 +248,29 @@ def preprocess(begin:str, end:str, dataPath:dict):
         for c1, c2 in ParticipantTmp.loc[:,["gameId","trollGame"]].drop_duplicates().values:
             data["Participant"].loc[data["Participant"].gameId==c1, "trollGame"] = c2
         data["Participant"] = pd.merge(data["Participant"], ParticipantTmp.loc[:,["gameId","participantId","laneEdit"]], on=["gameId","participantId"], how="left", suffixes=("","_y"))
-        data["Participant"].loc[~data["Participant"].laneEdit_y.isna(), "laneEdit"] = data["Participant"].loc[~data["Participant"].laneEdit_y.isna(), "laneEdit_y"]
+        data["Participant"].loc[data["Participant"].laneEdit_y.notna(), "laneEdit"] = data["Participant"].loc[~data["Participant"].laneEdit_y.isna(), "laneEdit_y"]
         data["Participant"].drop("laneEdit_y", axis=1, inplace=True)
-    
+
     # 1.2) 정글템: >= 2 
     # 1.2-1) 정글 미니언 최대 유저에게 정글 lane 배정
-    jungleCount = data["Participant"].query("queueId.str.contains('420|440')").groupby(by=["gameId","teamId","laneEdit"]).agg(jungleIdx=("laneEdit","size"))
-    jungleCount.reset_index(drop=False, inplace=True)
+    jungleCount = (
+        data["Participant"]
+        .query(
+            """
+            reMatch==False\
+            and queueId.str.contains("420|440")\
+            """
+        )
+        .groupby(by=["gameId","teamId","laneEdit"])
+        .agg(jungleIdx=("laneEdit","size"))
+    ).reset_index(drop=False)
+
     if len(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx>1")) > 0:
         data["Participant"].loc[data["Participant"].gameId.isin(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx!=1").gameId), "trollGame"] = "TYPE03"
-        ParticipantTmp = pd.merge(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx!=1")[["gameId","teamId"]], data["Participant"], how="left")
+        ParticipantTmp = pd.merge(jungleCount.query("laneEdit=='JUNGLE' and jungleIdx!=1")[["gameId","teamId"]], data["Participant"].query("queueId.str.contains('420|440')"), how="left")
         maxJungleIdx = ParticipantTmp.query("laneEdit=='JUNGLE'").groupby(["gameId","teamId"]).agg(jungleIdx=("neutralMinionsKilled","idxmax"))
         maxJungleIdx.reset_index(drop=False, inplace=True)
-        maxJungleIdx = ParticipantTmp.loc[pd.Index(maxJungleIdx[~maxJungleIdx.jungleIdx.isnull()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
+        maxJungleIdx = ParticipantTmp.loc[pd.Index(maxJungleIdx[maxJungleIdx.jungleIdx.notna()].astype({"jungleIdx":"int"}).jungleIdx.tolist()), ["gameId","participantId", "teamId"]]
         maxJungleIdx["laneTmp2"] = "jungle"
         ParticipantTmp = pd.merge(data["Participant"], maxJungleIdx[["gameId", "teamId"]].astype("string"), on=["gameId", "teamId"], how="inner")
         ParticipantTmp = pd.merge(ParticipantTmp, maxJungleIdx, on=["gameId", "participantId", "teamId"], how="left")
@@ -227,27 +281,57 @@ def preprocess(begin:str, end:str, dataPath:dict):
     data["Participant"].drop(["laneTmp", "laneTmp2"], axis=1, errors="ignore", inplace=True)
     data["Participant"] = data["Participant"].astype({"laneEdit":"string"})
 
-    ## Support
+    ###########
+    # Support #
+    ###########
     # 서폿 아이템 ID
     supportItemId = ref.itemInfoDto.loc[ref.itemInfoDto.name.str.contains("주문도둑의 검|영혼의 낫|고대유물 방패|강철 어깨 보호대"), "itemId"]
     # 서폿 아이템 구매 Participant
-    participantId = data["MatchEvent"].query("reMatch==False and queueId.str.contains('420|440') and type=='ITEM_PURCHASED' and itemId==@supportItemId.tolist()")[["gameId", "participantId"]]  # support item 구매한 participant Id
+    participantId = (
+        data["MatchEvent"]
+        .query("""
+        reMatch==False\
+        and queueId.str.contains('420|440')\
+        and type=='ITEM_PURCHASED'\
+        and itemId==@supportItemId.tolist()\
+        """)
+        .loc[:, ["gameId", "participantId"]]
+    ) # support item 구매한 participant Id
     participantId["laneTmp"] = "support"
     participantId.drop_duplicates(keep="last", inplace=True)
-    data["Participant"] = pd.merge(data["Participant"], participantId, on=["gameId", "participantId"], how="left")
-    data["Participant"].loc[(data["Participant"].laneEdit!="JUNGLE")&(data["Participant"].laneTmp=="support"), "laneEdit"] = "SUPPORT"
+    data["Participant"] = pd.merge(data["Participant"], 
+                                   participantId, 
+                                   how="left")
+    data["Participant"].loc[(data["Participant"].laneEdit!="JUNGLE")
+                            &(data["Participant"].laneTmp=="support"), "laneEdit"] = "SUPPORT"
     # 각 game, 각 team 서포터 숫자 확인
     data["Participant"] = data["Participant"].astype({"laneEdit":"category"})
 
-    # Define Troll Game
+    #####################
+    # Define Troll Game #
+    #####################
+    # n(정글 템 구매) 확인
+    supportCount = (
+        data["Participant"]
+        .query("""
+        reMatch==False\
+        and queueId.str.contains("420|440")
+        """)
+        .groupby(by=["gameId","teamId","laneEdit"])
+        .agg(supportIdx=("laneEdit","size"))
+    ).reset_index(drop=False)
+
     # 2) n(서폿 템 구매) != 1
-    supportCount = data["Participant"].query("queueId.str.contains('420|440')").groupby(by=["gameId","teamId","laneEdit"]).agg(supportIdx=("laneEdit","size"))
-    supportCount.reset_index(drop=False, inplace=True)
     if len(supportCount.query("laneEdit=='SUPPORT' and supportIdx==0")) > 0:
-        data["Participant"].trollGame.where(~data["Participant"].gameId.isin(supportCount.query("laneEdit=='SUPPORT' and supportIdx!=1")["gameId"]), "TYPE", inplace=True)
+        (
+            data["Participant"]["trollGame"]
+            .where(~data["Participant"].gameId.isin(supportCount.query("laneEdit=='SUPPORT' and supportIdx!=1")["gameId"]), "TYPE", inplace=True)
+        )
         # 2.1) 서폿템: 0
         if len(supportCount.query("laneEdit=='SUPPORT' and supportIdx==0")) > 0:
-            ParticipantTmp = pd.merge(supportCount.query("laneEdit=='SUPPORT' and supportIdx==0")[["gameId","teamId"]], data["Participant"], how="left")
+            ParticipantTmp = pd.merge(supportCount.query("laneEdit=='SUPPORT' and supportIdx==0").loc[:,["gameId","teamId"]], 
+                                      data["Participant"].query("queueId.str.contains('420|440')"), 
+                                      how="left")
             ParticipantTmp.loc[:, "totalMinionsKilledSum"] = ParticipantTmp.loc[:, "totalMinionsKilled"] + ParticipantTmp.loc[:, "neutralMinionsKilled"]
             errorGame = ParticipantTmp.loc[:,["gameId","teamId"]].drop_duplicates()
             randLane = np.array([np.random.choice(["None"]*3+["SUPPORT"], 4, replace=False) for i in range(len(errorGame))]).flatten()
@@ -256,7 +340,7 @@ def preprocess(begin:str, end:str, dataPath:dict):
         for c1, c2 in ParticipantTmp.loc[:,["gameId","trollGame"]].drop_duplicates().values:
             data["Participant"].loc[data["Participant"].gameId==c1, "trollGame"] = c2
         data["Participant"] = pd.merge(data["Participant"], ParticipantTmp.loc[:,["gameId","participantId","laneEdit"]], on=["gameId","participantId"], how="left", suffixes=("","_y"))
-        data["Participant"].loc[~data["Participant"].laneEdit_y.isna(), "laneEdit"] = data["Participant"].loc[~data["Participant"].laneEdit_y.isna(), "laneEdit_y"]
+        data["Participant"].loc[data["Participant"].laneEdit_y.notna(), "laneEdit"] = data["Participant"].loc[~data["Participant"].laneEdit_y.isna(), "laneEdit_y"]
         data["Participant"].drop("laneEdit_y", axis=1, inplace=True)
 
     # 2.2) 서톳템: >= 2
@@ -269,7 +353,7 @@ def preprocess(begin:str, end:str, dataPath:dict):
         ParticipantTmp.loc[:, "totalMinionsKilledSum"] = ParticipantTmp.loc[:, "totalMinionsKilled"] + ParticipantTmp.loc[:, "neutralMinionsKilled"]
         minSupportIdx = ParticipantTmp.query("laneEdit=='SUPPORT'").groupby(["gameId","teamId"]).agg(supportIdx=("totalMinionsKilledSum","idxmin"))
         minSupportIdx.reset_index(drop=False, inplace=True)
-        minSupportIdx = ParticipantTmp.loc[pd.Index(minSupportIdx[~minSupportIdx.supportIdx.isnull()].astype({"supportIdx":"int"}).supportIdx.tolist()), ["gameId","participantId", "teamId"]]
+        minSupportIdx = ParticipantTmp.loc[pd.Index(minSupportIdx[minSupportIdx.supportIdx.notna()].astype({"supportIdx":"int"}).supportIdx.tolist()), ["gameId","participantId", "teamId"]]
         minSupportIdx["laneTmp2"] = "support"
         ParticipantTmp = pd.merge(data["Participant"], minSupportIdx[["gameId", "teamId"]].astype("string"), on=["gameId", "teamId"], how="inner")
         ParticipantTmp = pd.merge(ParticipantTmp, minSupportIdx, on=["gameId", "participantId", "teamId"], how="left")
@@ -298,7 +382,7 @@ def preprocess(begin:str, end:str, dataPath:dict):
     scaler.fit(yRange)
     data["MatchParticipantFrame"].loc[:, ["position_yEdit"]] = scaler.transform(data["MatchParticipantFrame"].loc[:, ["position_y"]])
     # 시간별 위치 정보 dict 생성
-#     posDict = {}
+    #     posDict = {}
     posDictGrp = {}
     posDf = pd.DataFrame()
     # 시간별 가중치 생성
@@ -356,11 +440,23 @@ def preprocess(begin:str, end:str, dataPath:dict):
     ParticipantTmp["change"] = 1
     ParticipantTmp = pd.merge(ParticipantTmp, posDataGrp[["gameId", "participantId", "laneEdit"]].drop_duplicates(), on=["gameId", "participantId"], how="left")
     data["Participant"] = pd.merge(data["Participant"], ParticipantTmp, on=["gameId", "participantId"], how="left", suffixes=("", "_y"))
-    data["Participant"].loc[-data["Participant"].laneEdit_y.isnull(), "laneEdit"] = data["Participant"].loc[-data["Participant"].laneEdit_y.isnull(), "laneEdit_y"]
+    data["Participant"].loc[data["Participant"].laneEdit_y.notna(), "laneEdit"] = data["Participant"].loc[data["Participant"].laneEdit_y.notna(), "laneEdit_y"]
     data["Participant"] = data["Participant"].drop(["change","laneEdit_y"], axis=1)
-    laneCount = data["Participant"].query("reMatch==False and queueId.str.contains('420|440')").groupby(["gameId","teamId","laneEdit"], as_index=False, observed=True).agg(cnt=("laneEdit","size"))
-    laneCount = pd.merge(laneCount, laneCount.query("laneEdit in ['TOP','MIDDLE','BOTTOM']").groupby(["gameId","teamId"], as_index=False).agg(cntSumTMB=("cnt","sum")), on=["gameId","teamId"], how="left")
 
+    # n(TOP, MIDDLE, BOTTOM) 확인
+    laneCount = (
+        data["Participant"].query("reMatch==False and queueId.str.contains('420|440')")
+        .groupby(["gameId","teamId","laneEdit"], as_index=False, observed=True)
+        .agg(cnt=("laneEdit","size"))
+    )
+    laneCount = pd.merge(
+        laneCount, 
+        laneCount.query("laneEdit in ['TOP','MIDDLE','BOTTOM']").groupby(["gameId","teamId"], as_index=False).agg(cntSumTMB=("cnt","sum")), 
+        on=["gameId","teamId"], 
+        how="left"
+    )
+
+    # n(TOP, MIDDLE, BOTTOM) != 1
     if len(laneCount[laneCount.cnt!=1]) > 0:
         print(f"{len(laneCount.loc[laneCount.cnt!=1,'gameId'].unique())} games have wrong laneEdit")
         # lane의 갯수가 문제가 있는 게임
@@ -398,17 +494,17 @@ def preprocess(begin:str, end:str, dataPath:dict):
             ParticipantChg = pd.concat([ParticipantChg, ParticipantTmp], axis=0, ignore_index=True)
         ParticipantChg["change"] = 1
         data["Participant"] = pd.merge(data["Participant"], ParticipantChg.loc[:,["gameId","participantId","laneEdit","change"]], on=["gameId", "participantId"], how="left", suffixes=("", "_y"))
-        data["Participant"].loc[-data["Participant"].laneEdit_y.isnull(), "laneEdit"] = data["Participant"].loc[-data["Participant"].laneEdit_y.isnull(), "laneEdit_y"]
+        data["Participant"].loc[data["Participant"].laneEdit_y.notna(), "laneEdit"] = data["Participant"].loc[-data["Participant"].laneEdit_y.isnull(), "laneEdit_y"]
         data["Participant"] = data["Participant"].drop(["change","laneEdit_y"], axis=1)
         print("PreProcess clear")
     else:
         print("PreProcess clear")
-    
+
     # add trollGame columns
     for key in data.keys():
         if ("gameId" in data[key].columns) and ("trollGame" not in data[key].columns):
             data[key] = pd.merge(data["Participant"][["gameId","trollGame"]].drop_duplicates(), data[key], how="right").reset_index(drop=True)
         else:
             continue
-            
+
     return data
